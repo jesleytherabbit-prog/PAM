@@ -779,6 +779,22 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
 #re-app .fx-tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:9px 16px;cursor:pointer;
   color:var(--parchment-dim);font-family:var(--serif);font-style:italic;font-size:1.15rem}
 #re-app .fx-tabs button:hover{color:var(--parchment)}
+#re-app .ct-chips{display:flex;flex-wrap:wrap;gap:6px}
+#re-app .ct-chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--re-accent-soft);border:1px solid var(--re-line);color:var(--re-ink)}
+#re-app .ct-tgs{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#re-app .ct-tg{display:flex;gap:8px;align-items:center;font-size:14px}
+#re-app .ct-tg input{accent-color:var(--re-accent)}
+#re-app .ct-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+#re-app .ct-grid.scene{margin-top:10px}
+#re-app .ct-stat{border:1px solid var(--re-line);border-radius:10px;background:var(--re-surface-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+#re-app .ct-stat .t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--re-muted)}
+#re-app .ct-stat b{font-size:24px;color:var(--re-gold);font-family:var(--serif)}
+#re-app .ct-stat small{font-size:11.5px;color:var(--re-muted);line-height:1.35}
+#re-app #ct-in{width:100%;margin:6px 0 10px;font-size:12.5px}
+#re-app .ct-sum{padding:10px 12px;border-radius:8px;font-weight:700;margin-bottom:8px}
+#re-app .ct-sum.ok{background:var(--re-ok-bg);color:var(--re-ok)}
+#re-app .ct-sum.bad{background:var(--re-no-bg);color:var(--re-no)}
+#re-app .ct-table tr.mal td{background:var(--re-no-bg)}
 #re-app .fc-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
 #re-app .fc-opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--re-line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--re-surface-2)}
 #re-app .fc-opt.on{border-color:var(--re-accent);box-shadow:0 0 0 1px var(--re-accent)}
@@ -996,6 +1012,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
   <button class="brand" data-go="home" title="Volver al inicio"><span class="brand-star">✦</span> PAM <span class="brand-full">Plataforma Avadense Multiuso</span></button>
   <nav class="mainnav" id="mainNav">
     <button data-go="ficha">Mi Ficha</button>
+    <button data-go="control">Controlador de Stats</button>
     <button data-go="canjes">Tabla de Canjes</button>
     <button data-go="compendio">Compendio Arcano</button>
     <button data-go="empleos">Empleos</button>
@@ -1017,6 +1034,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
     <p class="home-sub"><b class="home-pam">PAM · Plataforma Avadense Multiuso</b><br>Todo lo de tu personaje para el Sistema Avadense. Elegí por dónde empezar.</p>
     <div class="home-grid">
       <button class="home-card" data-go="ficha"><span class="hc-glyph">❖</span><span class="hc-title">Mi Ficha</span><span class="hc-desc">Cargá atributos, habilidades, trasfondos y ventajas de tu personaje.</span></button>
+      <button class="home-card" data-go="control"><span class="hc-glyph">⚖</span><span class="hc-title">Controlador de Stats</span><span class="hc-desc">Chequeá que los stats de combate de tu ficha estén bien calculados.</span></button>
       <button class="home-card" data-go="canjes"><span class="hc-glyph">✦</span><span class="hc-title">Tabla de Canjes</span><span class="hc-desc">Calculá cuántas grageas cuesta cada mejora y armá el texto para el foro.</span></button>
       <button class="home-card" data-go="compendio"><span class="hc-glyph">⚝</span><span class="hc-title">Compendio Arcano</span><span class="hc-desc" id="hcArcanos">Hechizos, pociones, rituales y objetos, con buscador y filtros.</span></button>
       <button class="home-card" data-go="empleos"><span class="hc-glyph">☾</span><span class="hc-title">Empleos</span><span class="hc-desc">Mirá qué nivel alcanzás en cada empleo y qué te falta para el siguiente.</span></button>
@@ -1083,6 +1101,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
   <nav class="re-tabs" role="tablist">
     <button role="tab" data-tab="empleos" aria-selected="true">Empleos</button>
     <button role="tab" data-tab="ficha" aria-selected="false">Mi ficha</button>
+    <button role="tab" data-tab="control" aria-selected="false">Controlador de stats</button>
     <button role="tab" data-tab="editor" aria-selected="false">Editor de empleos</button>
   </nav>
 
@@ -1137,6 +1156,9 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
     </nav>
     <div id="fx-body"></div>
   </section>
+
+  <!-- CONTROLADOR DE STATS -->
+  <section class="re-panel" id="p-control"><div class="pj-strip" id="pj-strip2"></div><div id="ctrl-body"></div></section>
 
   <!-- EDITOR -->
   <section class="re-panel" id="p-editor">
@@ -5101,7 +5123,10 @@ RENDERERS.arcanos = function(){
       const o = document.createElement("div"); o.className = "owned-row";
       o.innerHTML = `<span>${T.label} que ya tenés en la ficha:</span>` + ["bas","int","ava"].map(t=>
         `<label>${TIER[t].pl} <input type="number" min="0" data-t="${t}" value="${state.arcOwned[type][t]}"></label>`).join("");
+      o.insertAdjacentHTML("beforeend", `<button class="btn ghost small" data-fromficha title="Usar los arcanos cargados en Mi Ficha">Contar desde mi ficha</button>`);
       o.querySelectorAll("input").forEach(inp=>inp.addEventListener("change", e=>{ state.arcOwned[type][e.target.dataset.t] = Math.max(0, +e.target.value||0); renderAll(); }));
+      o.querySelector("[data-fromficha]").addEventListener("click", ()=>{ const f = window.grimorioFicha && window.grimorioFicha(); if(!f) return;
+        ["bas","int","ava"].forEach(t=>{ state.arcOwned[type][t] = f.arcanos.filter(a=>a.type===type && a.tier===t).length; }); renderAll(); });
       sec.appendChild(o);
     }
     // selector
@@ -5109,8 +5134,8 @@ RENDERERS.arcanos = function(){
     const list = ARC[type][tier];
     const inCartNames = new Set(items.map(i=>i.meta.name));
     let sel = ui("arcSel_"+type, "");
-    if(sel!=="__otro" && (!list.find(a=>a.name===sel) || inCartNames.has(sel))){
-      const first = list.find(a=>!inCartNames.has(a.name));
+    if(sel!=="__otro" && (!list.find(a=>a.name===sel) || inCartNames.has(sel) || fichaTieneArc(sel))){
+      const first = list.find(a=>!inCartNames.has(a.name) && !fichaTieneArc(a.name));
       sel = first ? first.name : "__otro"; state.ui["arcSel_"+type] = sel;
     }
     const arc = list.find(a=>a.name===sel);
@@ -5153,14 +5178,23 @@ RENDERERS.arcanos = function(){
 
 /* ---------- helpers compartidos arcanos / compendio ---------- */
 const invNote = autor => `Arcano inventado por ${autor}: confirmá con su autor o con Sistemas que podés canjearlo.`;
+/* ¿El personaje activo (Mi Ficha) ya tiene este arcano? */
+const _arcKey = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function fichaTieneArc(...names){
+  try{ const f = window.grimorioFicha && window.grimorioFicha(); if(!f || !f.arcanos) return false;
+    const ks = names.flatMap(n=>String(n||'').split('|')).map(_arcKey).filter(Boolean);
+    return f.arcanos.some(a=>ks.includes(_arcKey(a.name))); }catch(e){ return false; }
+}
+function fichaNombrePJ(){ try{ const f=window.grimorioFicha&&window.grimorioFicha(); return (f&&f.nombre)||'tu personaje'; }catch(e){ return 'tu personaje'; } }
 function arcOptGroups(list, inCartNames, sel){
-  const opt = a => [a.name, inCartNames.has(a.name)?`${a.name} ✓ en carrito`:(a.inv?`${a.name} · ${a.autor}`:a.name), inCartNames.has(a.name)];
+  const opt = a => { const own = fichaTieneArc(a.name); return [a.name, inCartNames.has(a.name)?`${a.name} ✓ en carrito`:own?`${a.name} ✓ ya lo tenés`:(a.inv?`${a.name} · ${a.autor}`:a.name), inCartNames.has(a.name)||own]; };
   const of = list.filter(a=>!a.inv), inv = list.filter(a=>a.inv);
   return `<optgroup label="Oficiales">${optionsHtml(of.map(opt),sel)}</optgroup>` + (inv.length?`<optgroup label="Inventados por jugadores">${optionsHtml(inv.map(opt),sel)}</optgroup>`:"");
 }
 function arcInCart(type, name){ return state.cart.some(i=>i.meta.kind==="arcano" && i.meta.type===type && i.meta.name===name); }
 function addArcanoToCart(type, tier, name, o={}){
   if(arcInCart(type,name)) return false;
+  if(fichaTieneArc(name) && !window.confirm(`${fichaNombrePJ()} ya tiene «${name}» en su ficha. ¿Agregarlo al carrito igual?`)) return false;
   const T = ARC_TYPES[type], price = TIER[tier].price;
   addToCart("ARCANOS", `${T.sing} ${tierWord(type,tier)}: ${name}${o.inv?" (inventado)":""} — ${price} grageas`, price, 0, null,
     {kind:"arcano", type, tier, name, custom:!!o.custom, inv:!!o.inv, reqs:[...(o.reqs||[])], ctx:"arcano", notes:o.inv?[invNote(o.autor)]:[]});
@@ -5278,6 +5312,7 @@ function compResults(){
     const btn = a.tier==="leg"
       ? `<button class="btn ghost small" data-add="${a.id}" title="Se canjea como Característica Legendaria">Ver Legendarias</button>`
       : inC ? `<button class="btn small" disabled>✓ En el carrito</button>`
+      : fichaTieneArc(a.calcName, a.nombre) ? `<button class="btn small owned" disabled title="${esc(fichaNombrePJ())} ya lo tiene en su ficha">✓ Ya lo tenés</button>`
             : `<button class="btn small ${inv?"arcane":""}" data-add="${a.id}">Agregar · ${TIER[a.tier].price} gr</button>`;
     const reqs = a.tier!=="leg" ? reqBlock(compReqs(a), "arcano", inv?[invNote(a.autor?a.autor.nombre:"su autor")]:[]) : "";
     return `<div class="cmp-card${COMP.open.has(a.id)?" open":""}${a.tier==="leg"?" legend":""}" data-id="${a.id}">
@@ -5989,6 +6024,7 @@ function setTab(t){
   ROOT.querySelectorAll('.re-panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));
   if(t==='empleos') renderEmpleos();
   if(t==='editor') renderEditor();
+  if(t==='control'){ ctrlRes=null; renderControl(); }
 }
 function renderWho(){ $('#who').innerHTML = ficha.nombre ? `Ficha cargada: <b>${esc(ficha.nombre)}</b>` : 'Sin ficha cargada'; }
 
@@ -6094,29 +6130,61 @@ const hasArc = n => ficha.arcanos.some(a=>norm(a.name)===norm(n));
 const sk = s => num(ficha.skills[s]);
 
 /* ---- cálculos de combate y puntos ---- */
-function combate(){
-  const A=ficha.attrs, E=etapaOf(), b=s=>BONUS[sk(s)]||0;
-  const ini = num(A['Percepción']) + b('Iniciativa');
-  const atkF = num(A.Vigor) + b('Pelea');
-  const def = 5 + num(A.Destreza) + b('Esquiva');
-  const atkM = num(A.Poder) + b('Duelo');
-  const r = x => Math.round(x);
-  return {
-    ini, atkF, def, atkM,
-    luchaF: r((atkF + def - 5 + ini)/3), luchaM: r((atkM + def - 5 + ini)/3),
-    pa: E.pa + num(A.Vigor) + num(A.Voluntad), umbral: E.u + num(A.Vigor), heridas: E.h + num(A.Voluntad), E
-  };
+/* Reglas del Sistema Avadense + Calculadora de Stats de Combate (raza, objetos y pociones de escena) */
+let combOpt = {warlock:null, herbivicus:null, fuerza:0, actividad:false, lic:false};
+function modsFicha(){
+  const r = norm(ficha.d.raza||'');
+  return { semiD:r.includes('semiduende'), semiG:r.includes('semigigante'),
+    carstein:hasArc('Anillo de los Carstein'), warlockObj:hasArc('Armadura de Warlock'),
+    maletin:hasArc('Maletín del pocionista inquieto'), bisu:hasArc('Bisutería Arcana'), herbiObj:hasArc('Herbivicus'),
+    herbicida:hasArc('Poción herbicida'), vitae:hasArc('Planta Vitae'), solucion:hasArc('Solución del ritualista'), altar:hasArc('Altar del ritualista') };
 }
-function puntos(){
+function combate(opt){
+  opt = Object.assign({}, opt===undefined ? {warlock:combOpt.warlock} : opt);
+  const A=ficha.attrs, E=etapaOf(), b=s=>BONUS[sk(s)]||0, M=modsFicha();
+  const warl = (opt.warlock===null||opt.warlock===undefined) ? false : !!opt.warlock && M.warlockObj;
+  const fz = num(opt.fuerza), act = opt.actividad?1:0, L4 = opt.lic?4:0;
+  const P=num(A['Percepción']), V=num(A.Vigor)+fz, D=num(A.Destreza), W=num(A.Voluntad), Po=num(A.Poder);
+  const vUmb = M.semiD ? Math.floor(V/2) : V;
+  const vPA = M.carstein ? 0 : vUmb*(M.semiG?3:1);
+  const extra = (n,l) => n ? ` ${n>0?'+':'−'} ${Math.abs(n)} (${l})` : '';
+  const ini = P + b('Iniciativa') + L4 - (warl?2:0) + act;
+  const atkF = V + b('Pelea') + L4 + (M.semiG?2:0);
+  const def = 5 + D + b('Esquiva') + L4 - (warl?2:0) + act;
+  const atkM = Po + b('Duelo');
+  const r = x => Math.round(x);
+  const luchaFx = (atkF + def - 5 + ini)/3, luchaMx = (atkM + def - 5 + ini)/3;
+  const pa = (E.pa + vPA + W) * (opt.lic?2:1), umbral = E.u + vUmb + L4, heridas = E.h + W + (opt.lic?2:0);
+  const vigTxt = fz ? `Vigor (${num(A.Vigor)} + ${fz} poción)` : `Vigor (${num(A.Vigor)})`;
+  const t = {
+    ini: `Percepción (${P}) + Iniciativa (${b('Iniciativa')})` + extra(-(warl?2:0),'Armadura de Warlock') + extra(act,'Poción de actividad') + extra(L4,'Licantropía'),
+    atkF: `${vigTxt} + Pelea (${b('Pelea')})` + extra(M.semiG?2:0,'Semigigante') + extra(L4,'Licantropía'),
+    luchaF: `(Ataque Físico (${atkF}) + Defensa (${def}) - 5 + Iniciativa (${ini})) / 3`,
+    atkM: `Poder (${Po}) + Duelo (${b('Duelo')})`,
+    luchaM: `(Ataque Mágico (${atkM}) + Defensa (${def}) - 5 + Iniciativa (${ini})) / 3`,
+    def: `5 + Destreza (${D}) + Esquiva (${b('Esquiva')})` + extra(-(warl?2:0),'Armadura de Warlock') + extra(act,'Poción de actividad') + extra(L4,'Licantropía'),
+    pa: (opt.lic?'(':'') + `Base (${E.pa}) + ` + (M.carstein ? `Vigor (0, Anillo de los Carstein)` : M.semiG ? `Vigor × 3 (${vPA}, Semigigante)` : M.semiD ? `Vigor ÷ 2 (${vPA}, Semiduende)` : vigTxt) + ` + Voluntad (${W})` + (opt.lic?') × 2 (Licantropía)':''),
+    umbral: `Base (${E.u}) + ` + (M.semiD ? `Vigor ÷ 2 (${vUmb}, Semiduende)` : vigTxt) + extra(L4,'Licantropía'),
+    heridas: `Base (${E.h}) + Voluntad (${W})` + extra(opt.lic?2:0,'Licantropía')
+  };
+  return { ini, atkF, def, atkM, luchaF:r(luchaFx), luchaM:r(luchaMx), luchaFx, luchaMx, pa, umbral, heridas, E, t, M, warl };
+}
+function puntos(opt){
+  opt = Object.assign({herbivicus:combOpt.herbivicus}, opt||{});
+  const M=modsFicha();
   const P=num(ficha.attrs.Poder), bp=BONUS[sk('Pociones')]||0, br=BONUS[sk('Rituales')]||0;
   let pp = P + bp, ppTxt = [`Poder (${P})`, `Pociones (${bp})`];
-  if(hasArc('Maletín del pocionista inquieto')){ pp *= 2; ppTxt = [`(${ppTxt.join(' + ')}) × 2 (Maletín del pocionista inquieto)`]; }
+  if(M.maletin){ pp *= 2; ppTxt = [`(${ppTxt.join(' + ')}) × 2 (Maletín del pocionista inquieto)`]; }
   const herb = LV_IDX(sk('Herbología')), rit = LV_IDX(sk('Rituales'));
-  if(hasArc('Herbivicus') && herb){ pp += herb; ppTxt.push(`${herb} (Herbivicus)`); }
-  if(hasArc('Poción herbicida') && herb){ pp += herb; ppTxt.push(`${herb} (Poción Herbicida)`); }
-  if(hasArc('Planta Vitae') && rit){ pp += rit; ppTxt.push(`${rit} (Planta Vitae)`); }
+  const herbiOn = M.herbiObj && (opt.herbivicus===null||opt.herbivicus===undefined ? true : !!opt.herbivicus);
+  if(herbiOn && herb){ pp += herb; ppTxt.push(`${herb} (Herbivicus)`); }
+  if(M.herbicida && herb){ pp += herb; ppTxt.push(`${herb} (Poción Herbicida)`); }
+  if(M.vitae && rit){ pp += rit; ppTxt.push(`${rit} (Planta Vitae)`); }
   let pr = P + br, prTxt = [`Poder (${P})`, `Rituales (${br})`];
-  if(hasArc('Bisutería Arcana')){ pr = P + br*2; prTxt = [`Poder (${P})`, `Rituales (${br}) × 2 (Bisutería Arcana)`]; }
+  if(M.bisu){ pr = P + br*2; prTxt = [`Poder (${P})`, `Rituales (${br}) × 2 (Bisutería Arcana)`]; }
+  if(M.solucion && bp){ pr += bp; prTxt.push(`${bp} (Solución del ritualista)`); }
+  const art = LV_IDX(ficha.artes.reduce((m,x)=>Math.max(m,num(x.v)),0));
+  if(M.altar && art){ pr += art; prTxt.push(`${art} (Altar del ritualista)`); }
   return {pp, ppTxt:ppTxt.join(' + '), pr, prTxt:prTxt.join(' + ')};
 }
 
@@ -6204,15 +6272,15 @@ function refreshCalc(){
   $('#fx-etapa').textContent = ficha.d.etapa;
   const row=(l,f,v)=>`<div class="fx-crow"><span class="l">${l}</span><span class="f">${f}</span><b>${v}</b></div>`;
   box.innerHTML = [
-    row('Iniciativa',`Percepción (${num(A['Percepción'])}) + Iniciativa (${b('Iniciativa')})`,c.ini),
-    row('Ataque Físico',`Vigor (${num(A.Vigor)}) + Pelea (${b('Pelea')})`,c.atkF),
-    row('Lucha Física',`(Ataque Físico (${c.atkF}) + Defensa (${c.def}) − 5 + Iniciativa (${c.ini})) / 3`,c.luchaF),
-    row('Ataque Mágico',`Poder (${num(A.Poder)}) + Duelo (${b('Duelo')})`,c.atkM),
-    row('Lucha Mágica',`(Ataque Mágico (${c.atkM}) + Defensa (${c.def}) − 5 + Iniciativa (${c.ini})) / 3`,c.luchaM),
-    row('Defensa',`5 + Destreza (${num(A.Destreza)}) + Esquiva (${b('Esquiva')})`,c.def),
-    row('PAs',`Base (${c.E.pa}) + Vigor (${num(A.Vigor)}) + Voluntad (${num(A.Voluntad)})`,c.pa),
-    row('Umbral de heridas',`Base (${c.E.u}) + Vigor (${num(A.Vigor)})`,c.umbral),
-    row('Heridas',`Base (${c.E.h}) + Voluntad (${num(A.Voluntad)})`,c.heridas)
+    row('Iniciativa',c.t.ini,c.ini),
+    row('Ataque Físico',c.t.atkF,c.atkF),
+    row('Lucha Física',c.t.luchaF.replace(' - 5',' − 5'),c.luchaF),
+    row('Ataque Mágico',c.t.atkM,c.atkM),
+    row('Lucha Mágica',c.t.luchaM.replace(' - 5',' − 5'),c.luchaM),
+    row('Defensa',c.t.def,c.def),
+    row('PAs',c.t.pa,c.pa),
+    row('Umbral de heridas',c.t.umbral,c.umbral),
+    row('Heridas',c.t.heridas,c.heridas)
   ].join('');
   $('#fx-pts').innerHTML = row('Puntos de Pociones',p.ppTxt,p.pp) + row('Puntos de Rituales',p.prTxt,p.pr);
 }
@@ -6774,15 +6842,15 @@ function seccionesFicha(C) {
     S.habs[a] = out.join('\n');
   });
   S.combate = [`[color=${C}]▋ Combate:[/color]`,
-    A('Iniciativa', `Percepción (${num(at['Percepción'])}) + Iniciativa (${b('Iniciativa')}) = [b]${c.ini}[/b]`),
-    A('Ataque Físico', `Vigor (${num(at.Vigor)}) + Pelea (${b('Pelea')}) = [b]${c.atkF}[/b]`),
-    A('Lucha Física', `(Ataque Físico (${c.atkF}) + Defensa (${c.def}) - 5 + Iniciativa (${c.ini})) / 3 = [b]${c.luchaF}[/b]`),
-    A('Ataque Mágico', `Poder (${num(at.Poder)}) + Duelo (${b('Duelo')}) = [b]${c.atkM}[/b]`),
-    A('Lucha Mágica', `(Ataque Mágico (${c.atkM}) + Defensa (${c.def}) - 5 + Iniciativa (${c.ini})) / 3 = [b]${c.luchaM}[/b]`),
-    A('Defensa', `5 + Destreza (${num(at.Destreza)}) + Esquiva (${b('Esquiva')}) = [b]${c.def}[/b]`),
-    A('PAs', `Base (${c.E.pa}) + Vigor (${num(at.Vigor)}) + Voluntad (${num(at.Voluntad)}) = [b]${c.pa}[/b]`),
-    A('Umbral de heridas', `Base (${c.E.u}) + Vigor (${num(at.Vigor)}) = [b]${c.umbral}[/b]`),
-    A('Heridas', `Base (${c.E.h}) + Voluntad (${num(at.Voluntad)}) = [b]${c.heridas}[/b]`), '',
+    A('Iniciativa', `${c.t.ini} = [b]${c.ini}[/b]`),
+    A('Ataque Físico', `${c.t.atkF} = [b]${c.atkF}[/b]`),
+    A('Lucha Física', `${c.t.luchaF} = [b]${c.luchaF}[/b]`),
+    A('Ataque Mágico', `${c.t.atkM} = [b]${c.atkM}[/b]`),
+    A('Lucha Mágica', `${c.t.luchaM} = [b]${c.luchaM}[/b]`),
+    A('Defensa', `${c.t.def} = [b]${c.def}[/b]`),
+    A('PAs', `${c.t.pa} = [b]${c.pa}[/b]`),
+    A('Umbral de heridas', `${c.t.umbral} = [b]${c.umbral}[/b]`),
+    A('Heridas', `${c.t.heridas} = [b]${c.heridas}[/b]`), '',
     L('Puntos de Pociones', `${p.ppTxt} = [b]${p.pp}[/b]`), L('Puntos de Rituales', `${p.prTxt} = [b]${p.pr}[/b]`), '',
     L('Puntos de Destino', `[b]${num(ficha.extra.pd)}[/b]`), L('Pérdida de Puntos de Destino', ficha.extra.pdPerdida)].join('\n');
   const arcList = k => {
@@ -6922,29 +6990,30 @@ function actualizarCodigo(codigo, base, cur) {
   const cB = withF(base, combate), cC = withF(cur, combate), pB = withF(base, puntos), pC = withF(cur, puntos);
   const C2 = cur.attrs, bb = s => BONUS[num(cur.skills[s])] || 0;
   const comb = [
-    ['Iniciativa', `Percepción (${num(C2['Percepción'])}) + Iniciativa (${bb('Iniciativa')}) = [b]${cC.ini}[/b]`, cB.ini !== cC.ini],
-    ['Ataque Físico', `Vigor (${num(C2.Vigor)}) + Pelea (${bb('Pelea')}) = [b]${cC.atkF}[/b]`, cB.atkF !== cC.atkF],
-    ['Lucha Física', `(Ataque Físico (${cC.atkF}) + Defensa (${cC.def}) - 5 + Iniciativa (${cC.ini})) / 3 = [b]${cC.luchaF}[/b]`, cB.luchaF !== cC.luchaF || cB.atkF !== cC.atkF || cB.def !== cC.def || cB.ini !== cC.ini],
-    ['Ataque Mágico', `Poder (${num(C2.Poder)}) + Duelo (${bb('Duelo')}) = [b]${cC.atkM}[/b]`, cB.atkM !== cC.atkM],
-    ['Lucha Mágica', `(Ataque Mágico (${cC.atkM}) + Defensa (${cC.def}) - 5 + Iniciativa (${cC.ini})) / 3 = [b]${cC.luchaM}[/b]`, cB.luchaM !== cC.luchaM || cB.atkM !== cC.atkM || cB.def !== cC.def || cB.ini !== cC.ini],
-    ['Defensa', `5 + Destreza (${num(C2.Destreza)}) + Esquiva (${bb('Esquiva')}) = [b]${cC.def}[/b]`, cB.def !== cC.def],
-    ['PAs', `Base (${cC.E.pa}) + Vigor (${num(C2.Vigor)}) + Voluntad (${num(C2.Voluntad)}) = [b]${cC.pa}[/b]`, cB.pa !== cC.pa],
-    ['Umbral de heridas', `Base (${cC.E.u}) + Vigor (${num(C2.Vigor)}) = [b]${cC.umbral}[/b]`, cB.umbral !== cC.umbral],
-    ['Heridas', `Base (${cC.E.h}) + Voluntad (${num(C2.Voluntad)}) = [b]${cC.heridas}[/b]`, cB.heridas !== cC.heridas]
+    ['Iniciativa', `${cC.t.ini} = [b]${cC.ini}[/b]`, cB.t.ini !== cC.t.ini],
+    ['Ataque Físico', `${cC.t.atkF} = [b]${cC.atkF}[/b]`, cB.t.atkF !== cC.t.atkF],
+    ['Lucha Física', `${cC.t.luchaF} = [b]${cC.luchaF}[/b]`, cB.t.luchaF !== cC.t.luchaF],
+    ['Ataque Mágico', `${cC.t.atkM} = [b]${cC.atkM}[/b]`, cB.t.atkM !== cC.t.atkM],
+    ['Lucha Mágica', `${cC.t.luchaM} = [b]${cC.luchaM}[/b]`, cB.t.luchaM !== cC.t.luchaM],
+    ['Defensa', `${cC.t.def} = [b]${cC.def}[/b]`, cB.t.def !== cC.t.def],
+    ['PAs', `${cC.t.pa} = [b]${cC.pa}[/b]`, cB.t.pa !== cC.t.pa],
+    ['Umbral de heridas', `${cC.t.umbral} = [b]${cC.umbral}[/b]`, cB.t.umbral !== cC.t.umbral],
+    ['Heridas', `${cC.t.heridas} = [b]${cC.heridas}[/b]`, cB.t.heridas !== cC.t.heridas]
   ];
   const ci = code.search(/▋\s*Combate/i);
   if (ci >= 0) {
     let head = code.slice(0, ci), tail = code.slice(ci);
     comb.forEach(([l, v, changed]) => {
-      if (!changed) return;
+      if (!changed && !(cur.plantilla && cur.plantilla.forzarCombate)) return;
       const re = new RegExp(`(→\\s*${reEsc(l)}\\s*:${CLOSE}[ \\t]*)([^\\n<]*)`, 'i');
       let n = 0; tail = tail.replace(re, (m, pre) => { n++; return pre + v; });
       if (n) hechos.push(`Combate: ${l}`); else manual.push(`Combate ${l}: no lo encontré (${v.replace(/\[\/?b\]/g, '')})`);
     });
     code = head + tail;
-  } else if (comb.some(x => x[2])) manual.push('Combate: no encontré el bloque «▋ Combate» para recalcularlo');
-  if (pB.pp !== pC.pp || pB.ppTxt !== pC.ppTxt) rep(/(▋\s*Puntos de Pociones\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)([^\n<]*)/i, (m, pre) => pre + `${pC.ppTxt} = [b]${pC.pp}[/b]`, 'Puntos de Pociones');
-  if (pB.pr !== pC.pr || pB.prTxt !== pC.prTxt) rep(/(▋\s*Puntos de Rituales\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)([^\n<]*)/i, (m, pre) => pre + `${pC.prTxt} = [b]${pC.pr}[/b]`, 'Puntos de Rituales');
+  } else if (comb.some(x => x[2]) || (cur.plantilla && cur.plantilla.forzarCombate)) manual.push('Combate: no encontré el bloque «▋ Combate» para recalcularlo');
+  const FZ = !!(cur.plantilla && cur.plantilla.forzarCombate);
+  if (FZ || pB.pp !== pC.pp || pB.ppTxt !== pC.ppTxt) rep(/(▋\s*Puntos de Pociones\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)([^\n<]*)/i, (m, pre) => pre + `${pC.ppTxt} = [b]${pC.pp}[/b]`, 'Puntos de Pociones');
+  if (FZ || pB.pr !== pC.pr || pB.prTxt !== pC.prTxt) rep(/(▋\s*Puntos de Rituales\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)([^\n<]*)/i, (m, pre) => pre + `${pC.prTxt} = [b]${pC.pr}[/b]`, 'Puntos de Rituales');
   if (num(base.extra.pd) !== num(cur.extra.pd)) rep(/(▋\s*Puntos de Destino\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)(?:\[b\])?\d+(?:\[\/b\])?/i, (m, pre) => pre + `[b]${num(cur.extra.pd)}[/b]`, 'Puntos de Destino');
   // 7. listas (arcanos, trasfondos, idiomas, talentos...): por líneas
   let lines = code.split('\n');
@@ -7093,7 +7162,7 @@ function bindCodigo(body) {
   };
   const s1 = body.querySelector('#fc-save'); if (s1) s1.onclick = () => save(false);
   const s2 = body.querySelector('#fc-save-load'); if (s2) s2.onclick = () => save(true);
-  const pub = body.querySelector('#fc-publicado'); if (pub) pub.onclick = () => { const r = actualizarCodigo(P.codigo, P.base || ficha, ficha); guardarPlantilla(r.code, ficha); persist(); renderFicha(); toast('Guardado como tu versión publicada'); };
+  const pub = body.querySelector('#fc-publicado'); if (pub) pub.onclick = () => { const r = actualizarCodigo(P.codigo, P.base || ficha, ficha); P.forzarCombate = false; guardarPlantilla(r.code, ficha); persist(); renderFicha(); toast('Guardado como tu versión publicada'); };
   const ver = body.querySelector('#fc-ver'); if (ver) ver.onclick = () => { const t = body.querySelector('#fc-orig'); t.hidden = !t.hidden; };
   const del = body.querySelector('#fc-borrar'); if (del) del.onclick = () => { if (!window.confirm('¿Borrar el código guardado de este personaje para pegar uno nuevo?')) return; P.codigo = ''; P.base = null; persist(); renderFicha(); };
 }
@@ -7110,9 +7179,106 @@ function mezclaBase(parsed) {
   return out;
 }
 
+/* ============ Controlador de stats de combate ============ */
+const STATS_CTRL = [
+  ['ini','Iniciativa'], ['atkF','Ataque Físico'], ['atkM','Ataque Mágico'], ['def','Defensa'],
+  ['luchaF','Lucha Física'], ['luchaM','Lucha Mágica'], ['pa','PAs'], ['umbral','Umbral de heridas'],
+  ['heridas','Heridas'], ['pp','Puntos de Pociones'], ['pr','Puntos de Rituales']
+];
+let ctrlTxt = '', ctrlRes = null;
+const LVW = /\b(desentrenad|novat|competente|expert|maestr|legendari)/i;
+function leerStatsEscritos(raw){
+  const t = cleanForo(raw);
+  const lines = t.split('\n').map(l=>l.trim()).filter(Boolean);
+  const out = {};
+  STATS_CTRL.forEach(([k,lab])=>{
+    const re = new RegExp(`^[→▋•✦\\-*\\s]*${lab.replace(/ /g,'\\s+')}\\s*:\\s*(.*)$`, 'i');
+    const cand = lines.map(l=>l.match(re)).filter(Boolean).map(m=>m[1]).filter(v=>!LVW.test(v) || /=/.test(v));
+    if(!cand.length){ out[k]={found:false}; return; }
+    const v = cand[0];
+    const m = v.includes('=') ? v.split('=').pop().match(/-?\d+(?:[.,]\d+)?/) : (v.match(/-?\d+(?:[.,]\d+)?(?!.*\d)/));
+    out[k] = m ? {found:true, val:parseFloat(m[0].replace(',','.')), txt:v} : {found:true, val:null, txt:v};
+  });
+  return out;
+}
+function esperados(){
+  const c = combate(), p = puntos();
+  return { ini:c.ini, atkF:c.atkF, atkM:c.atkM, def:c.def, luchaF:c.luchaF, luchaM:c.luchaM, pa:c.pa, umbral:c.umbral, heridas:c.heridas, pp:p.pp, pr:p.pr,
+    _x:{luchaF:c.luchaFx, luchaM:c.luchaMx}, _t:Object.assign({}, c.t, {pp:p.ppTxt, pr:p.prTxt}) };
+}
+function renderControl(){
+  const box = $('#ctrl-body'); if(!box) return;
+  const c = combate(), p = puntos(), M = c.M, P = plantillaDe(ficha);
+  const chip = (on,l) => on ? `<span class="ct-chip">${esc(l)}</span>` : '';
+  const det = [chip(true,`Etapa: ${ficha.d.etapa||'—'}`), chip(true,`Raza: ${ficha.d.raza||'Humana'}`),
+    chip(M.semiD,'Semiduende: Vigor ÷ 2 para PAs y Umbral'), chip(M.semiG,'Semigigante: +2 Ataque Físico, Vigor × 3 en PAs'),
+    chip(M.carstein,'Anillo de los Carstein'), chip(M.warlockObj,'Armadura de Warlock'), chip(M.maletin,'Maletín del pocionista inquieto'),
+    chip(M.herbiObj,'Herbivicus'), chip(M.herbicida,'Poción herbicida'), chip(M.vitae,'Planta Vitae'), chip(M.bisu,'Bisutería Arcana'),
+    chip(M.solucion,'Solución del ritualista'), chip(M.altar,'Altar del ritualista')].join('');
+  const toggles = (M.warlockObj ? `<label class="ct-tg"><input type="checkbox" id="ct-warlock" ${combOpt.warlock?'checked':''}> La Armadura de Warlock está puesta (−2 Iniciativa y Defensa)</label>` : '')
+    + (M.herbiObj ? `<label class="ct-tg"><input type="checkbox" id="ct-herbi" ${combOpt.herbivicus===false?'':'checked'}> Herbivicus activo (suma tu nivel de Herbología a Pociones)</label>` : '');
+  const E = esperados();
+  const tile = (k,l) => `<div class="ct-stat" title="${esc(E._t[k]||'')}"><span class="t">${l}</span><b>${E[k]}</b><small>${esc(E._t[k]||'')}</small></div>`;
+  // escena
+  const anyScene = num(combOpt.fuerza) || combOpt.actividad || combOpt.lic;
+  let scene = '';
+  if(anyScene){ const s = combate({warlock:combOpt.warlock, fuerza:combOpt.fuerza, actividad:combOpt.actividad, lic:combOpt.lic});
+    scene = `<div class="ct-grid scene">${[['ini','Iniciativa'],['atkF','Ataque Físico'],['def','Defensa'],['luchaF','Lucha Física'],['luchaM','Lucha Mágica'],['pa','PAs'],['umbral','Umbral de heridas'],['heridas','Heridas']].map(([k,l])=>`<div class="ct-stat"><span class="t">${l}</span><b>${s[k]}</b><small>${esc(s.t[k]||'')}</small></div>`).join('')}</div>`; }
+  // chequeo
+  const fuente = P.codigo ? `<p class="small muted">Se revisa el código guardado en <b>Código para el foro</b>. Si querés revisar otra versión, pegala abajo.</p>` : `<p class="small muted">Pegá tu ficha (el código de «Editar» o el texto copiado de la ficha publicada).</p>`;
+  let res = '';
+  if(ctrlRes){
+    const bad = ctrlRes.filter(r=>r.st==='mal').length, miss = ctrlRes.filter(r=>r.st==='falta').length;
+    res = `<div class="ct-sum ${bad?'bad':'ok'}">${bad ? `${bad} stat${bad>1?'s':''} no coincide${bad>1?'n':''} con lo que debería tener tu ficha.` : 'Todo bien: los stats escritos coinciden con los de tu ficha.'}${miss?` ${miss} no los encontré escritos.`:''}</div>
+      <div class="tablewrap"><table class="req ct-table"><thead><tr><th class="l">Stat</th><th>En tu ficha</th><th>Debería ser</th><th></th><th class="l">Cómo se calcula</th></tr></thead><tbody>
+      ${ctrlRes.map(r=>`<tr class="${r.st}"><td class="l"><b>${r.l}</b></td><td>${r.st==='falta'?'—':esc(r.w)}</td><td><b>${r.e}</b>${r.x!==undefined && !Number.isInteger(r.x)?`<div class="muted small">exacto: ${r.x.toFixed(2).replace('.',',')}</div>`:''}</td>
+        <td>${r.st==='ok'?'<span class="badge r3">✓ Bien</span>':r.st==='redondeo'?'<span class="badge r2">≈ Redondeo</span>':r.st==='falta'?'<span class="badge">No está</span>':'<span class="badge r0">✗ Revisar</span>'}</td>
+        <td class="l small">${esc(r.f)}</td></tr>`).join('')}</tbody></table></div>
+      ${bad && P.codigo && P.modo==='personal' ? `<div class="row" style="margin-top:10px"><button class="btn sm primary" id="ct-fix">Corregirlos en «Código para el foro»</button><span class="muted small">Se reescriben esas líneas con los valores correctos en tu código.</span></div>` : ''}
+      ${bad && P.modo!=='personal' ? `<p class="small muted">Si usás el modelo Compacto o Extendido de «Código para el foro», el código ya sale con los valores correctos.</p>` : ''}`;
+  }
+  box.innerHTML = `<div class="card"><h2>Lo que tiene en cuenta</h2>
+      <p class="muted small" style="margin-top:-4px">Sale de la ficha de <b>${esc(ficha.nombre||'tu personaje')}</b>: atributos, habilidades, etapa, raza y arcanos (pestaña Magia).</p>
+      <div class="ct-chips">${det}</div>${toggles?`<div class="ct-tgs">${toggles}</div>`:''}</div>
+    <div class="card"><h2>Stats que debería tener la ficha</h2><div class="ct-grid">${STATS_CTRL.map(([k,l])=>tile(k,l)).join('')}</div></div>
+    <div class="card"><div class="row"><h2 style="margin:0">Chequeo de stats</h2><span class="spacer"></span><button class="btn primary" id="ct-run">Chequear stats</button></div>
+      ${fuente}<textarea id="ct-in" rows="4" placeholder="(opcional) Pegá acá la ficha a revisar…">${esc(ctrlTxt)}</textarea>${res}</div>
+    <div class="card"><h2>En escena <span class="muted small" style="font-weight:400">(no cambia tu ficha)</span></h2>
+      <div class="ct-tgs">
+        <label class="ct-tg">Poción de fuerza <select id="ct-fz">${[0,1,2,3].map(v=>`<option value="${v}" ${num(combOpt.fuerza)===v?'selected':''}>${v?'+'+v+' Vigor':'Ninguna'}</option>`).join('')}</select></label>
+        <label class="ct-tg"><input type="checkbox" id="ct-act" ${combOpt.actividad?'checked':''}> Poción de actividad (+1 Defensa e Iniciativa)</label>
+        <label class="ct-tg"><input type="checkbox" id="ct-lic" ${combOpt.lic?'checked':''}> Licantropía (sólo con el canje de licantropía)</label>
+      </div>${scene || '<p class="small muted">Activá una poción o la licantropía para ver los stats de esa escena.</p>'}</div>`;
+  const rr = () => { ctrlRes = ctrlRes ? null : null; renderControl(); };
+  const w = $('#ct-warlock'); if(w) w.onchange = () => { combOpt.warlock = w.checked; ctrlRes && runCheck(); renderControl(); refreshIfFicha(); };
+  const hb = $('#ct-herbi'); if(hb) hb.onchange = () => { combOpt.herbivicus = hb.checked; ctrlRes && runCheck(); renderControl(); refreshIfFicha(); };
+  $('#ct-fz').onchange = e => { combOpt.fuerza = num(e.target.value); renderControl(); };
+  $('#ct-act').onchange = e => { combOpt.actividad = e.target.checked; renderControl(); };
+  $('#ct-lic').onchange = e => { combOpt.lic = e.target.checked; renderControl(); };
+  $('#ct-in').oninput = e => { ctrlTxt = e.target.value; };
+  $('#ct-run').onclick = () => { runCheck(); renderControl(); };
+  const fx = $('#ct-fix'); if(fx) fx.onclick = () => { P.forzarCombate = true; persist(); fichaTab='codigo'; try{localStorage.setItem('grimorio.fichaTab','codigo');}catch(e){} if(window.showSection) window.showSection('ficha'); renderFicha(); toast('Listo: copiá el código corregido'); };
+}
+function refreshIfFicha(){ try{ if(ui.tab==='ficha') renderFicha(); }catch(e){} }
+function runCheck(){
+  const P = plantillaDe(ficha);
+  const src = ctrlTxt.trim() || P.codigo || '';
+  if(!src){ toast('Pegá tu ficha para chequearla'); ctrlRes = null; return; }
+  const W = leerStatsEscritos(src), E = esperados();
+  ctrlRes = STATS_CTRL.map(([k,l])=>{
+    const w = W[k], e = E[k], x = E._x[k];
+    let st;
+    if(!w.found || w.val===null) st = 'falta';
+    else if(w.val===e) st = 'ok';
+    else if(x!==undefined && (w.val===Math.floor(x) || w.val===Math.ceil(x))) st = 'redondeo';
+    else st = 'mal';
+    return {k, l, w: w.found && w.val!==null ? String(w.val).replace('.',',') : '', e, x, st, f:E._t[k]||''};
+  });
+}
+
 /* ============ Personajes (varias fichas) ============ */
 const pjName = p => (p.ficha.nombre||'').trim() || 'Sin nombre';
-function refreshAll(){ renderFicha(); renderWho(); if(ui.tab==='empleos') renderEmpleos(); if(ui.tab==='editor') renderEditor(); pintarPjs(); }
+function refreshAll(){ renderFicha(); renderWho(); if(ui.tab==='empleos') renderEmpleos(); if(ui.tab==='editor') renderEditor(); if(ui.tab==='control'){ ctrlRes=null; renderControl(); } pintarPjs(); try{ if(typeof renderAll==='function') renderAll(); if(typeof COMP!=='undefined' && COMP.built) compResults(); }catch(e){} }
 function cambiarPj(id){ flushSave(); pjs.activa=id; ficha=pjActivo().ficha; flushSave(); refreshAll(); toast(`Ficha de ${pjName(pjActivo())}`); }
 function nuevoPj(base){ flushSave(); const f = base ? normFicha(JSON.parse(JSON.stringify(base))) : emptyFicha(); if(base){ f.nombre = (f.nombre||'Sin nombre')+' (copia)'; f.jobState={}; }
   const p={id:newPjId(), ficha:f}; pjs.lista.push(p); pjs.activa=p.id; ficha=f; flushSave(); fichaTab='datos'; refreshAll(); if(window.showSection) window.showSection('ficha'); }
@@ -7131,8 +7297,9 @@ function pintarPjs(){
       +pjs.lista.map(p=>`<button class="theme-opt" role="menuitemradio" data-pj="${p.id}" aria-pressed="${p.id===a.id}"><i class="pj-av" ${pjFoto(p.ficha)}>${pjFoto(p.ficha)?'':'✦'}</i><span>${esc(pjName(p))}<small>${esc([p.ficha.extra&&p.ficha.extra.ocupacion, p.ficha.d&&p.ficha.d.etapa].filter(Boolean).join(' · ')||'Ficha vacía')}</small></span></button>`).join('')
       +`<div class="pk-bar"><button data-pja="new">+ Nuevo personaje</button><button data-pja="dup">Duplicar</button><button data-pja="del">Eliminar</button></div></div>`;
   }
-  const S=$('#pj-strip');
+  ['#pj-strip','#pj-strip2'].forEach(sel=>{ const S=$(sel);
   if(S){ S.innerHTML=`<span class="pj-lbl">Personaje</span>`+pjs.lista.map(p=>`<button class="pj-chip" data-pj="${p.id}" aria-pressed="${p.id===pjs.activa}"><i class="pj-av" ${pjFoto(p.ficha)}>${pjFoto(p.ficha)?'':'✦'}</i>${esc(pjName(p))}</button>`).join('')+`<button class="pj-chip add" data-pja="new">+ Nuevo personaje</button>`; }
+  });
 }
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-pjt]')){ pjOpen=!pjOpen; pintarPjs(); return; }
@@ -7157,9 +7324,10 @@ setTab(ui.tab||'empleos');
 /* ============ Portada y navegación principal ============ */
 (function(){
   const K_USER = "grimorioAvadense.usuario";
-  const SECS = {home:"sec-home", ficha:"sec-revisor", canjes:"sec-canjes", compendio:"sec-compendio", empleos:"sec-revisor", editor:"sec-revisor"};
+  const SECS = {home:"sec-home", ficha:"sec-revisor", control:"sec-revisor", canjes:"sec-canjes", compendio:"sec-compendio", empleos:"sec-revisor", editor:"sec-revisor"};
   const RE_INFO = {
     ficha:["Mi Ficha","Toda la ficha de tu personaje, con el mismo orden que la del foro. Importala pegando tu ficha, completala y copiala de vuelta. Se guarda en este navegador."],
+    control:["Controlador de Stats","Revisa que los stats de combate y los puntos de pociones y rituales de tu ficha estén bien calculados, teniendo en cuenta raza, objetos y arcanos."],
     empleos:["Empleos","Tocá un empleo para ver qué nivel alcanzás y qué te falta para el siguiente."],
     editor:["Editor de Empleos","Creá o corregí empleos copiando sus umbrales del foro, y compartilos con un código."]
   };
@@ -7186,6 +7354,7 @@ setTab(ui.tab||'empleos');
     document.querySelectorAll("#mainNav button").forEach(b=>b.classList.toggle("active", b.dataset.go===key));
     document.body.dataset.sec = key;
     document.getElementById("ledgerWrap").style.display = (key==="canjes"||key==="compendio") ? "" : "none";
+    if(key==="canjes"||key==="compendio"){ try{ if(typeof renderAll==="function") renderAll(); if(typeof COMP!=="undefined" && COMP.built) compResults(); }catch(e){} }
     if(RE_INFO[key]){
       document.getElementById("reTitle").textContent = RE_INFO[key][0];
       document.getElementById("reSub").textContent = RE_INFO[key][1];
