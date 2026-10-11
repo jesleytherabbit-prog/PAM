@@ -975,7 +975,12 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
 #re-app .pj-chip[aria-pressed="true"]{border-color:var(--re-accent);box-shadow:0 0 0 1px var(--re-accent)}
 #re-app .pj-chip.add{padding:5px 12px;border-style:dashed;color:var(--re-muted)}
 :root[data-skin="pixel"] .pj-av,:root[data-skin="pixel"] .pj-btn,:root[data-skin="pixel"] #re-app .pj-chip{border-radius:0}
-@media (max-width:640px){.pj-btn{max-width:150px}}
+@media (max-width:760px){
+  .topbar{position:relative}
+  .topbar .theme-wrap{position:static;margin-left:0}
+  .topbar .theme-list{position:absolute;left:12px;right:12px;top:calc(100% - 4px);width:auto;max-height:70vh}
+  .pj-btn{max-width:170px}
+}
 .theme-wrap{position:relative;margin-left:4px}
 .theme-btn{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line-strong);color:var(--parchment);border-radius:999px;padding:4px 12px 4px 4px;font:inherit;font-size:13px;cursor:pointer}
 .theme-btn i,.theme-opt i{width:22px;height:22px;border-radius:50%;display:inline-block;flex:none;border:1px solid var(--line-strong)}
