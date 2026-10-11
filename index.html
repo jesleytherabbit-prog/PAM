@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grimorio Avadense</title>
+<title>PAM · Plataforma Avadense Multiuso</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Courier+Prime&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -779,6 +779,16 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
 #re-app .fx-tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:9px 16px;cursor:pointer;
   color:var(--parchment-dim);font-family:var(--serif);font-style:italic;font-size:1.15rem}
 #re-app .fx-tabs button:hover{color:var(--parchment)}
+#re-app .fc-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+#re-app .fc-opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--re-line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--re-surface-2)}
+#re-app .fc-opt.on{border-color:var(--re-accent);box-shadow:0 0 0 1px var(--re-accent)}
+#re-app .fc-opt input{margin-top:4px;accent-color:var(--re-accent)}
+#re-app .fc-opt b{display:block}
+#re-app .fc-opt small{display:block;color:var(--re-muted);font-size:12.5px;line-height:1.4}
+#re-app textarea.fc-out,#re-app #fc-in{width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5}
+#re-app .fc-ok{color:var(--re-ok)}
+#re-app .fc-warn{margin:8px 0;padding:10px 12px;border-radius:8px;background:var(--re-no-bg);color:var(--re-ink);font-size:13px}
+#re-app .fc-warn ul{margin:6px 0 0;padding-left:18px}
 #re-app .fx-tabs button.on{color:var(--gold-bright);border-bottom-color:var(--gold)}
 #re-app .fx-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px}
 #re-app .fx-grid.one{grid-template-columns:1fr}
@@ -930,6 +940,13 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
 :root[data-skin]:not([data-skin="avadense"]) h1{font-family:var(--ff-display)}
 /* selector de tema */
 .topbar{z-index:30}
+.brand-full{font-family:var(--sans);font-style:normal;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--parchment-dim);margin-left:6px}
+@media (max-width:760px){.brand-full{display:none}}
+.home-pam{font-family:var(--serif);font-weight:600;font-size:1.15em;letter-spacing:.04em;color:var(--gold-bright)}
+.site-foot{position:relative;z-index:1;text-align:center;padding:40px 16px 32px;margin-top:24px;color:var(--parchment-dim);font-family:var(--serif);font-size:16px;letter-spacing:.04em;border-top:1px solid var(--line)}
+.foot-heart{display:inline-block}
+@media (prefers-reduced-motion:no-preference){.foot-heart{animation:latido 2.4s ease-in-out infinite}}
+@keyframes latido{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}24%{transform:scale(1)}36%{transform:scale(1.12)}}
 .pj-btn{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line-strong);color:var(--parchment);border-radius:999px;padding:4px 12px 4px 4px;font:inherit;font-size:13px;cursor:pointer;max-width:220px}
 .pj-btn .pj-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pj-btn .car{color:var(--parchment-dim);font-size:.8em}
@@ -976,7 +993,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
 <div id="pumpkins"></div>
 
 <header class="topbar">
-  <button class="brand" data-go="home" title="Volver al inicio"><span class="brand-star">✦</span> Grimorio Avadense</button>
+  <button class="brand" data-go="home" title="Volver al inicio"><span class="brand-star">✦</span> PAM <span class="brand-full">Plataforma Avadense Multiuso</span></button>
   <nav class="mainnav" id="mainNav">
     <button data-go="ficha">Mi Ficha</button>
     <button data-go="canjes">Tabla de Canjes</button>
@@ -997,7 +1014,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
       <span class="eyebrow">Nombre de usuario</span>
       <input id="inpUsuario" type="text" maxlength="40" placeholder="Escribí tu nombre de usuario" autocomplete="off">
     </label>
-    <p class="home-sub">Tu grimorio de personaje para el Sistema Avadense. Elegí por dónde empezar.</p>
+    <p class="home-sub"><b class="home-pam">PAM · Plataforma Avadense Multiuso</b><br>Todo lo de tu personaje para el Sistema Avadense. Elegí por dónde empezar.</p>
     <div class="home-grid">
       <button class="home-card" data-go="ficha"><span class="hc-glyph">❖</span><span class="hc-title">Mi Ficha</span><span class="hc-desc">Cargá atributos, habilidades, trasfondos y ventajas de tu personaje.</span></button>
       <button class="home-card" data-go="canjes"><span class="hc-glyph">✦</span><span class="hc-title">Tabla de Canjes</span><span class="hc-desc">Calculá cuántas grageas cuesta cada mejora y armá el texto para el foro.</span></button>
@@ -1053,6 +1070,8 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
   <div class="content" id="re-mount"></div>
 </section>
 
+<footer class="site-foot">Por: Hana Park <span class="foot-heart" aria-hidden="true">💖</span></footer>
+
 <template id="re-template"><div id="re-app">
   <header class="top">
     <div>
@@ -1099,7 +1118,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
       </div>
       <div class="fx-actions">
         <button class="btn sm primary" id="f-parse">Importar ficha del foro</button>
-        <button class="btn sm" id="f-bb">Copiar ficha para el foro</button>
+        <button class="btn sm" id="f-bb">Código para el foro</button>
         <button class="btn sm" id="f-sync">Traer de la calculadora</button>
         <button class="btn sm" id="f-push">Llevar a la calculadora</button>
         <button class="btn sm ghost" id="f-export">Exportar código</button>
@@ -1114,6 +1133,7 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
       <button data-ft="caract">Características</button>
       <button data-ft="magia">Magia</button>
       <button data-ft="otros">Otros</button>
+      <button data-ft="codigo">Código para el foro</button>
     </nav>
     <div id="fx-body"></div>
   </section>
@@ -5698,7 +5718,7 @@ function emptyFicha(){
   return {nombre:'', attrs, skills, artes:[], bgs:[], adv, jobState:{},
     d:{avatar:'',multicuenta:'',nacimiento:'',residencia:'',clase:'',fechaNac:'',edad:'',etapa:'Joven',orientacion:'',sangre:'',raza:'Humana',casa:'',curso:'',faccion:'',quidditch:''},
     desc:{fisica:'',psico:'',fuerte:'',debil:'',gustos:'',fobias:'',historia:'',familia:'',mascota:''},
-    extra:{kicker:'',ocupacion:'',foto:'',limites:'',pd:1,pdPerdida:''},
+    extra:{kicker:'',ocupacion:'',foto:'',limites:'',pd:1,pdPerdida:'',frase:''},
     arcanos:[], idiomas:[], esp, talentos:[], vinculos:[], titulos:'', otros:''};
 }
 function normFicha(f){
@@ -6117,11 +6137,12 @@ function renderFicha_(){
   renderHead();
   ROOT.querySelectorAll('#fx-tabs button').forEach(b=>b.classList.toggle('on', b.dataset.ft===fichaTab));
   const body=$('#fx-body');
-  const R = {datos:renderDatos, desc:renderDesc, caract:renderCaract, magia:renderMagia, otros:renderOtros}[fichaTab] || renderDatos;
+  const R = {datos:renderDatos, desc:renderDesc, caract:renderCaract, magia:renderMagia, otros:renderOtros, codigo:renderCodigo}[fichaTab] || renderDatos;
   body.innerHTML = R();
   bindFicha(body);
   if(fichaTab==='caract') refreshCalc();
   if(fichaTab==='otros') renderBgs();
+  if(fichaTab==='codigo') bindCodigo(body);
 }
 ROOT.querySelectorAll('#fx-tabs button').forEach(b=>b.onclick=()=>{ fichaTab=b.dataset.ft; try{ localStorage.setItem('grimorio.fichaTab',fichaTab); }catch(e){} renderFicha(); });
 
@@ -6340,10 +6361,12 @@ $('#f-import').onclick=()=>openDlg('Importar código','Pega el código de una fi
 $('#f-parse').onclick=()=>openDlg('Importar ficha del foro','Abrí tu ficha en el foro, entrá a «Editar», copiá TODO el contenido del mensaje (Ctrl+A, Ctrl+C) y pegalo acá. También sirve el texto copiado de la ficha publicada. Se reemplaza la ficha que tengas cargada.','',txt=>{
   if(!txt.trim()) throw new Error('vacío');
   const p=parseFichaForo(txt); const js=ficha.jobState;
-  ficha=normFicha(p.ficha); ficha.jobState=js||{}; persist(); fichaTab='datos'; renderFicha();
-  toast(`Ficha importada: ${p.resumen}`);
+  ficha=normFicha(p.ficha); ficha.jobState=js||{};
+  if(esCodigoForo(txt)) guardarPlantilla(txt, ficha);
+  persist(); fichaTab='datos'; renderFicha();
+  toast(`Ficha importada: ${p.resumen}${esCodigoForo(txt)?' · tu código quedó guardado en «Código para el foro»':''}`);
 },'Importar');
-$('#f-bb').onclick=()=>copy(fichaBBCode());
+$('#f-bb').onclick=()=>{ fichaTab='codigo'; try{ localStorage.setItem('grimorio.fichaTab',fichaTab); }catch(e){} renderFicha(); };
 
 /* ============ Panel: Editor ============ */
 function curEdit(){ let j=jobs.find(x=>x.id===ui.edit); if(!j){ j=jobs[0]; ui.edit=j?j.id:null; } return j; }
@@ -6450,6 +6473,7 @@ function cleanForo(raw){
   t = t.replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<!--[\s\S]*?-->/g,'');
   t = t.replace(/<summary[^>]*>/gi,'\n').replace(/<(br|\/div|\/p|\/li|\/summary|\/details|\/h\d|\/tr|\/label)\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'');
   t = t.replace(/\[img[^\]]*\][\s\S]*?\[\/img\]/gi,'');
+  t = t.replace(/\[spoiler=\s*(?:▋\s*)?([^\]]*)\]/gi,'\n$1\n').replace(/\[\/spoiler\]/gi,'\n');
   t = t.replace(/\[\/?(?:color|b|i|u|s|url|center|left|right|justify|size|font|spoiler|hide|quote|code|strike|sub|sup|table|tr|td|list|\*|flash|youtube|scroll|updown|blur|fade|rand|roll)(?:=[^\]]*)?\]/gi,'');
   t = t.replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
   return t.split('\n').map(l=>l.replace(/[ \t ]+/g,' ').trim()).join('\n').replace(/\n{3,}/g,'\n\n');
@@ -6716,6 +6740,376 @@ $('#dlg-ok').onclick=()=>{
   try{ dlgCb(ta.value); $('#dlg').close(); }catch(e){ toast('Ese código no es válido'); }
 };
 
+/* ============ Código de la ficha para el foro (compacta, extendida o personalizada) ============ */
+const withF = (f, fn) => { const o = ficha; ficha = f; try { return fn(); } finally { ficha = o; } };
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+function plantillaDe(f) { f.plantilla = f.plantilla || { modo: 'compacta', codigo: '', base: null }; return f.plantilla; }
+
+/* ---- contenido común (el mismo texto que pide el Modelo de Ficha del foro) ---- */
+function seccionesFicha(C) {
+  const L = (l, v) => `[color=${C}]▋ ${l}:[/color] ${v || '-'}`, A = (l, v) => `[color=${C}]→ ${l}:[/color] ${v}`;
+  const d = ficha.d, ds = ficha.desc, c = combate(), p = puntos(), at = ficha.attrs, b = s => BONUS[sk(s)] || 0;
+  const S = {};
+  S.datos = [L('Nombre y Apellido', ficha.nombre), L('Avatar/PB', d.avatar), L('Multicuenta', d.multicuenta), '',
+    L('Lugar de Nacimiento', d.nacimiento), L('Lugar de Residencia', d.residencia), L('Clase Social', d.clase), '',
+    L('Fecha de Nacimiento', d.fechaNac), L('Edad', d.edad), L('Etapa', d.etapa), '',
+    L('Orientación Sexual', d.orientacion), L('Tipo de Sangre', d.sangre), L('Raza', d.raza), '',
+    L('Casa', d.casa), L('Curso', d.curso), L('Facción', d.faccion), L('Equipo de Quidditch', d.quidditch)].join('\n');
+  S.desc = [L('Descripción Física', ds.fisica), L('Descripción Psicológica', ds.psico), '',
+    L('Punto Fuerte', ds.fuerte), L('Punto Débil', ds.debil), L('Gustos/Aficiones', ds.gustos), L('Fobias/manías', ds.fobias), '',
+    L('Historia', ds.historia), L('Familia', ds.familia ? '\n' + ds.familia : ''), L('Mascota', ds.mascota)].join('\n');
+  S.atributos = [`[color=${C}]▋ Atributos:[/color] (Límites: ${ficha.extra.limites || etapaOf().lim || '____'})`]
+    .concat(ATTRS.map(a => A(a, '+' + num(at[a])))).join('\n');
+  S.habs = {};
+  ATTRS.forEach(a => {
+    const out = [];
+    SKILLS[a].forEach(s => {
+      if (s === ART) {
+        if (ficha.artes.length) ficha.artes.forEach(x => out.push(A(`Arte / Artesanía (${x.n || '___'})`, SKILL_LV[num(x.v)])));
+        else out.push(A('Arte / Artesanía (___)', SKILL_LV[0]));
+        return;
+      }
+      out.push(A(s, SKILL_LV[sk(s)]));
+    });
+    S.habs[a] = out.join('\n');
+  });
+  S.combate = [`[color=${C}]▋ Combate:[/color]`,
+    A('Iniciativa', `Percepción (${num(at['Percepción'])}) + Iniciativa (${b('Iniciativa')}) = [b]${c.ini}[/b]`),
+    A('Ataque Físico', `Vigor (${num(at.Vigor)}) + Pelea (${b('Pelea')}) = [b]${c.atkF}[/b]`),
+    A('Lucha Física', `(Ataque Físico (${c.atkF}) + Defensa (${c.def}) - 5 + Iniciativa (${c.ini})) / 3 = [b]${c.luchaF}[/b]`),
+    A('Ataque Mágico', `Poder (${num(at.Poder)}) + Duelo (${b('Duelo')}) = [b]${c.atkM}[/b]`),
+    A('Lucha Mágica', `(Ataque Mágico (${c.atkM}) + Defensa (${c.def}) - 5 + Iniciativa (${c.ini})) / 3 = [b]${c.luchaM}[/b]`),
+    A('Defensa', `5 + Destreza (${num(at.Destreza)}) + Esquiva (${b('Esquiva')}) = [b]${c.def}[/b]`),
+    A('PAs', `Base (${c.E.pa}) + Vigor (${num(at.Vigor)}) + Voluntad (${num(at.Voluntad)}) = [b]${c.pa}[/b]`),
+    A('Umbral de heridas', `Base (${c.E.u}) + Vigor (${num(at.Vigor)}) = [b]${c.umbral}[/b]`),
+    A('Heridas', `Base (${c.E.h}) + Voluntad (${num(at.Voluntad)}) = [b]${c.heridas}[/b]`), '',
+    L('Puntos de Pociones', `${p.ppTxt} = [b]${p.pp}[/b]`), L('Puntos de Rituales', `${p.prTxt} = [b]${p.pr}[/b]`), '',
+    L('Puntos de Destino', `[b]${num(ficha.extra.pd)}[/b]`), L('Pérdida de Puntos de Destino', ficha.extra.pdPerdida)].join('\n');
+  const arcList = k => {
+    const items = ficha.arcanos.filter(a => a.type === k); if (!items.length) return '-';
+    const out = [];
+    (MG_TIERS[k] || ['']).concat(['']).filter((t, i, a) => a.indexOf(t) === i).forEach(t => {
+      const g = items.filter(a => (a.tier || '') === t); if (!g.length) return;
+      out.push(`[b]${tierLbl(k, t, true).toUpperCase()}[/b]`);
+      g.forEach(a => out.push(`✦ ${a.name}${a.nota ? ': ' + a.nota : ''}`));
+    });
+    return out.join('\n');
+  };
+  S.hechizos = arcList('hechizo'); S.pociones = arcList('pocion'); S.rituales = arcList('ritual');
+  S.objetos = [arcList('objeto'), ficha.arcanos.some(a => a.type === 'especial') ? arcList('especial') : ''].filter(x => x && x !== '-').join('\n\n') || '-';
+  S.quidditch = arcList('quidditch');
+  S.raza = d.raza || 'Humana';
+  S.idiomas = ficha.idiomas.length ? ficha.idiomas.map(x => `✦ [b]${x.n} — ${x.nivel}[/b]${x.nota ? '. ' + x.nota : ''}`).join('\n') : '-';
+  S.trasfondos = ficha.bgs.length ? ficha.bgs.map(x => `✦ [b]${x.t} — ${x.c}${x.e ? ' — ' + x.e : ''} ${ROMAN[num(x.v)] || x.v}[/b]${x.nota ? ': ' + x.nota : ''}`).join('\n') : '-';
+  const adv = ADVS.filter(a => num(ficha.adv[a]) > 0);
+  S.ventajas = adv.length ? adv.map(a => `✦ [b]${a} ${ROMAN[num(ficha.adv[a])]}[/b]`).join('\n') : '-';
+  const esp = ESP_RAMAS.filter(r => num(ficha.esp[r]) > 0);
+  S.esp = esp.length ? esp.map(r => `✦ [b]${r} ${ROMAN[num(ficha.esp[r])]}[/b]`).join('\n') : '-';
+  const tal = ficha.talentos.map(x => `✦ [b]${x.n}[/b]${x.nota ? (/inventad/i.test(x.n) ? ': ' : ' — ') + x.nota : ''}`)
+    .concat(ficha.vinculos.map(x => `✦ [b]${x.tipo}:[/b] ${x.pj}${x.nota ? ' — ' + x.nota : ''}`));
+  S.talentos = tal.length ? tal.join('\n') : '-';
+  S.titulos = ficha.titulos.trim() || '-';
+  if (ficha.otros.trim()) S.titulos += '\n\n' + ficha.otros.trim();
+  return S;
+}
+
+/* ---- Modelo compacto oficial ---- */
+function codigoCompacto() {
+  const C = '#7c623e', S = seccionesFicha(C);
+  const foto = ficha.extra.foto || 'URL_IMAGEN_200X225_AQUÍ';
+  const tab = (i, lab, cont) => `<div class="tabb"><input id="tabb-${i}" name="tabb-group-1"${i === 1 ? ' checked=""' : ''} type="radio"><label for="tabb-${i}"><font style="font: 12px Cinzel; font-weight: bold; text-transform: uppercase; color: #7c623e; padding: 10px; line-height: 18px; letter-spacing: 1px; border-bottom: 1px solid #7c623e;">${lab}</font></label><div class="contento">${cont}\n</div></div>`;
+  const sp = (t, v) => `[spoiler=${t}]${v}[/spoiler]`;
+  const caract = S.atributos + '\n\n' + `[color=${C}]▋ Habilidades:[/color]\n` + ATTRS.map(a => sp(a.toUpperCase(), S.habs[a])).join('\n') + '\n\n' + S.combate + '\n';
+  const magia = [sp('HECHIZOS', S.hechizos), sp('POCIONES', S.pociones), sp('RITUALES', S.rituales), sp('OBJETOS/ARMAS', S.objetos), sp('QUIDDITCH', S.quidditch)].join('\n');
+  const otros = [sp('RAZA', S.raza), sp('IDIOMAS', S.idiomas), sp('TRASFONDOS', S.trasfondos), sp('VENTAJAS', S.ventajas), sp('ESPECIALIZACIONES', S.esp), sp('TALENTOS', S.talentos), sp('TÍTULOS ACADÉMICOS', S.titulos)].join('\n');
+  return `<center><div><div style="width: 580px; background-image: url('https://i.imgur.com/Kbj4Atj.jpg'); border: 0px none; border-radius: 0px 0px 10px 10px;"><div style="width: 540px; background-image: url('https://i.imgur.com/pe6iaP5.png'); border: 0px none; border-radius: 0px 0px 0px 0px;"><div style="font-family: Cinzel; color: #6d5737; font-size: 24px; width: 540px; text-align: center; letter-spacing: 1px;"><strong>Ficha de Personaje</strong></div><div style="width: 500px; padding: 20px;"><div id="imagen1" style="background: url('https://i.imgur.com/kbSLbwo.jpg');"><td><div class="imagen2" style="background: url('${foto}'); border: 1px solid #2C2C2C;"></div></td></tr></table></div><br>\n`
+    + `<div class="tabss">${tab(1, 'Datos', S.datos)}${tab(2, 'Desc.', S.desc)}${tab(3, 'Caract.', caract)}${tab(4, 'Magia', magia)}${tab(5, 'Otros', otros)}</div></div>\n`
+    + `<style>.tabss {position: relative; overflow: hidden; width: 500px; height: 500px; padding: 10px;} .tabb {float: left;} .tabb label {padding: 15px; margin-left: -3px; position: relative; text-align: center; width:100px; height:20px;} .tabb [type=radio] {display: none;} .contento {border:1px solid #2C2C2C;border-radius: 10px 10px 10px 10px; position: absolute; top: 60px; left: 0px; height: 420px; width: 470px; background: #121111; color:#797969; padding: 15px; outline: 1px solid #000;overflow: auto;font: 11px verdana;text-align: justify; line-height: 20px;} .tabb [type=radio]:checked ~ label { z-index: 2;} .tabb [type=radio]:checked ~ label ~ .contento {z-index: 1;} #imagen1 {width:500px; height: 250px; outline: 1px solid #2C2C2C; overflow: hidden;} .imagen2 {width:200px; height:225px; margin-left: 275px; margin-top: 10px; margin-bottom: 5px;}</style></div></div></div></center>`;
+}
+
+/* ---- Modelo extendido oficial (dos mensajes) ---- */
+function codigoExtendido() {
+  const C = '#7c623e', S = seccionesFicha(C);
+  const head = `<center><div style="width: 580px; background-image: url('https://i.imgur.com/Kbj4Atj.jpg'); border: 0px none; border-radius: 0px 0px 10px 10px;"><div style="width: 540px; background-image: url('https://i.imgur.com/pe6iaP5.png'); border: 0px none; border-radius: 0px 0px 0px 0px;"><img style="display: inline;" class="" src="https://i.imgur.com/9wKwLj2.jpg" alt=""><div style="width: 500px; font-family: georgia; font-size: 14px; text-align: justify; line-height: 18px; padding-left: 5px; margin-top: 5px; color: #797969;">\n`;
+  const box = (t, v) => `<span class="scaja-subtitle">${t}</span><div class="scaja-content" style="padding=2px; width: auto;">${v}\n</div>`;
+  const sp = (t, v) => `[spoiler=▋ ${t}]${v}[/spoiler]`;
+  const img = ficha.extra.foto || 'https://i.imgur.com/7Be0VDk.jpg';
+  const frase = ficha.extra.frase || 'Frase que te caracterice';
+  const p1 = head + `<span class="scaja-title">FICHA DE PERSONAJE\nAVADA KEDAVRA</span>\n\n[center][img]${img}[/img]\n[color=#797969][i]"${frase}"[/i][/color][/center]\n[hr]\n`
+    + box('Datos Básicos', S.datos) + '\n\n' + box('{Descripciones»', S.desc) + '\n</div></div></div></center>';
+  const habs = `[color=${C}]▋ Habilidades[/color]\n` + ATTRS.map(a => `[spoiler=${a.toUpperCase()}]${S.habs[a]}[/spoiler]`).join('\n');
+  const p2 = head + box('Atributos', S.atributos) + '\n\n' + box('Habilidades', habs) + '\n\n' + box('Acceso rápido', S.combate) + '\n\n'
+    + box('MAGIA', [sp('HECHIZOS', S.hechizos), sp('POCIONES', S.pociones), sp('RITUALES', S.rituales), sp('OBJETOS/ARMAS', S.objetos), sp('QUIDDITCH', S.quidditch)].join('\n')) + '\n\n'
+    + box('CANJES', [sp('RAZA', S.raza), sp('IDIOMAS', S.idiomas), sp('TRASFONDOS', S.trasfondos), sp('VENTAJAS', S.ventajas), sp('ESPECIALIZACIONES', S.esp), sp('TALENTOS', S.talentos), sp('TÍTULOS ACADÉMICOS', S.titulos)].join('\n'))
+    + '\n<div class="scaja-credit">FICHA DISEÑADA EXCLUSIVAMENTE PARA AVADA KEDAVRA</div>\n</div></div></div></center>';
+  return [p1, p2];
+}
+
+/* ---- Ficha personalizada: se edita el código guardado sólo donde cambió algo ---- */
+const reEsc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const CLOSE = '(?:\\s*(?:\\[\\/(?:color|b|i|u|font|size)\\]|<\\/(?:span|b|strong|i|em|font)>))*';
+const plain = s => String(s || '').replace(/\[[^\]]*\]/g, '').replace(/<[^>]*>/g, '').trim();
+const BULLET = /^[\s✦•→\-*✿❀◆·❁✾✧▸►»]+/;
+const lineKey = l => plain(l).replace(BULLET, '').trim();
+const fichaClone = f => JSON.parse(JSON.stringify(f));
+
+// campos de una línea / varias líneas
+const CAMPOS = [
+  ['nombre', 'Nombre y Apellido'], ['d.avatar', 'Avatar/PB'], ['d.avatar', 'Avatar'], ['d.multicuenta', 'Multicuentas?'],
+  ['d.nacimiento', 'Lugar de Nacimiento'], ['d.residencia', 'Lugar de Residencia'], ['d.clase', 'Clase Social'],
+  ['d.fechaNac', 'Fecha de Nacimiento'], ['d.edad', 'Edad'], ['d.etapa', 'Etapa'], ['d.orientacion', 'Orientación Sexual'],
+  ['d.sangre', 'Tipo de Sangre'], ['d.raza', 'Raza'], ['d.casa', 'Casa'], ['d.curso', 'Curso'], ['d.faccion', 'Facción'],
+  ['d.quidditch', 'Equipo de Quidditch'], ['desc.fuerte', 'Puntos? Fuertes?'], ['desc.debil', 'Puntos? Débil(?:es)?'],
+  ['desc.gustos', 'Gustos ?\\/ ?Aficiones'], ['desc.fobias', 'Fobias ?\\/ ?[Mm]anías'], ['desc.mascota', 'Mascotas?'],
+  ['extra.pdPerdida', 'Pérdida de Puntos de Destino']
+];
+const CAMPOS_LARGOS = [['desc.fisica', 'Descripción Física'], ['desc.psico', 'Descripción Psicológica'], ['desc.historia', 'Historia'], ['desc.familia', 'Familia']];
+const getPath = (f, p) => p === 'nombre' ? f.nombre : p.split('.').reduce((o, k) => o ? o[k] : '', f);
+
+function actualizarCodigo(codigo, base, cur) {
+  let code = String(codigo);
+  const hechos = [], manual = [];
+  const rep = (re, fn, what) => { let n = 0; code = code.replace(re, (...m) => { n++; return fn(...m); }); if (n) hechos.push(what); return n; };
+  const valOk = v => String(v ?? '').trim();
+  // 1. campos simples
+  const vistos = new Set();
+  CAMPOS.forEach(([p, lab]) => {
+    if (vistos.has(p)) return;
+    const a = valOk(getPath(base, p)), b = valOk(getPath(cur, p));
+    if (a === b) return;
+    const re = new RegExp(`(▋\\s*(?:${lab})\\s*:${CLOSE}[ \\t]*)([^\\n<]*?)([ \\t]*)(?=\\n|<|\\[\\/spoiler\\]|$)`, 'i');
+    if (rep(re, (m, pre, v, sp) => pre + (b || '-') + sp, labelDe(p))) vistos.add(p);
+    else if (!/Avatar$/.test(lab)) manual.push(`${labelDe(p)}: no encontré dónde va en tu código (nuevo valor: ${b || '-'})`);
+  });
+  // 2. campos largos (hasta la siguiente etiqueta ▋ o el cierre del bloque)
+  CAMPOS_LARGOS.forEach(([p, lab]) => {
+    const a = valOk(getPath(base, p)), b = valOk(getPath(cur, p));
+    if (a === b) return;
+    const re = new RegExp(`(▋\\s*${lab}\\s*:${CLOSE}[ \\t]*)([\\s\\S]*?)(?=\\n[^\\n]*▋|<\\/div>|\\[\\/spoiler\\]|<\\/details>|$)`, 'i');
+    if (!rep(re, (m, pre, seg) => pre + mezclarLineas(seg, b || '-'), labelDe(p))) manual.push(`${labelDe(p)}: no la encontré en tu código`);
+  });
+  // 3. cabecera: foto, apodo, ocupación (se reemplaza el texto viejo exacto)
+  [['extra.foto', 'Imagen'], ['extra.kicker', 'Nombre en su idioma'], ['extra.ocupacion', 'Ocupación'], ['extra.frase', 'Frase']].forEach(([p, l]) => {
+    const a = valOk(getPath(base, p)), b = valOk(getPath(cur, p));
+    if (a === b || !b) return;
+    if (a.length >= 3 && code.includes(a)) { code = code.split(a).join(b); hechos.push(l); }
+    else manual.push(`${l}: cambiala a mano (nuevo: ${b})`);
+  });
+  // límites
+  if (valOk(base.extra.limites) !== valOk(cur.extra.limites) && cur.extra.limites)
+    rep(/(Límites:\s*)([^)\n]*)(\))/i, (m, a, v, c) => a + cur.extra.limites + c, 'Límites');
+  // 4. atributos
+  ATTRS.forEach(at => {
+    if (num(base.attrs[at]) === num(cur.attrs[at])) return;
+    const re = new RegExp(`(→\\s*${reEsc(at)}\\s*:${CLOSE}[ \\t]*)([+-]?\\d*)`, 'i');
+    if (!rep(re, (m, pre) => pre + '+' + num(cur.attrs[at]), at)) manual.push(`Atributo ${at}: no lo encontré`);
+  });
+  // 5. habilidades
+  const LV = '(?:Desentrenad[oa]|Novat[oa]|Competente|Expert[oa]|Maestr[oa]|Legendari[oa])\\s*\\(\\+\\d+\\)(?:\\s*\\/[^\\n]*)?';
+  Object.keys(cur.skills).forEach(s => {
+    if (num(base.skills[s]) === num(cur.skills[s])) return;
+    const re = new RegExp(`(→\\s*${reEsc(s)}\\s*:${CLOSE}[ \\t]*)(${LV})`, 'i');
+    if (!rep(re, (m, pre) => pre + SKILL_LV[num(cur.skills[s])], s)) manual.push(`Habilidad ${s}: no la encontré`);
+  });
+  cur.artes.forEach(x => {
+    const old = base.artes.find(y => norm(y.n) === norm(x.n));
+    if (old && num(old.v) === num(x.v)) return;
+    const re = new RegExp(`(→\\s*(?:Arte\\s*\\/\\s*Artesanía\\s*\\(\\s*)?${reEsc(x.n)}\\s*\\)?\\s*:${CLOSE}[ \\t]*)(${LV})`, 'i');
+    if (!rep(re, (m, pre) => pre + SKILL_LV[num(x.v)], `Arte/Artesanía (${x.n})`)) manual.push(`Arte/Artesanía ${x.n}: agregala a mano (${SKILL_LV[num(x.v)]})`);
+  });
+  base.artes.forEach(x => { if (!cur.artes.some(y => norm(y.n) === norm(x.n))) manual.push(`Arte/Artesanía ${x.n}: la quitaste, borrala a mano`); });
+  // 6. combate y puntos: se recalculan si cambió algo de lo que los compone
+  const cB = withF(base, combate), cC = withF(cur, combate), pB = withF(base, puntos), pC = withF(cur, puntos);
+  const C2 = cur.attrs, bb = s => BONUS[num(cur.skills[s])] || 0;
+  const comb = [
+    ['Iniciativa', `Percepción (${num(C2['Percepción'])}) + Iniciativa (${bb('Iniciativa')}) = [b]${cC.ini}[/b]`, cB.ini !== cC.ini],
+    ['Ataque Físico', `Vigor (${num(C2.Vigor)}) + Pelea (${bb('Pelea')}) = [b]${cC.atkF}[/b]`, cB.atkF !== cC.atkF],
+    ['Lucha Física', `(Ataque Físico (${cC.atkF}) + Defensa (${cC.def}) - 5 + Iniciativa (${cC.ini})) / 3 = [b]${cC.luchaF}[/b]`, cB.luchaF !== cC.luchaF || cB.atkF !== cC.atkF || cB.def !== cC.def || cB.ini !== cC.ini],
+    ['Ataque Mágico', `Poder (${num(C2.Poder)}) + Duelo (${bb('Duelo')}) = [b]${cC.atkM}[/b]`, cB.atkM !== cC.atkM],
+    ['Lucha Mágica', `(Ataque Mágico (${cC.atkM}) + Defensa (${cC.def}) - 5 + Iniciativa (${cC.ini})) / 3 = [b]${cC.luchaM}[/b]`, cB.luchaM !== cC.luchaM || cB.atkM !== cC.atkM || cB.def !== cC.def || cB.ini !== cC.ini],
+    ['Defensa', `5 + Destreza (${num(C2.Destreza)}) + Esquiva (${bb('Esquiva')}) = [b]${cC.def}[/b]`, cB.def !== cC.def],
+    ['PAs', `Base (${cC.E.pa}) + Vigor (${num(C2.Vigor)}) + Voluntad (${num(C2.Voluntad)}) = [b]${cC.pa}[/b]`, cB.pa !== cC.pa],
+    ['Umbral de heridas', `Base (${cC.E.u}) + Vigor (${num(C2.Vigor)}) = [b]${cC.umbral}[/b]`, cB.umbral !== cC.umbral],
+    ['Heridas', `Base (${cC.E.h}) + Voluntad (${num(C2.Voluntad)}) = [b]${cC.heridas}[/b]`, cB.heridas !== cC.heridas]
+  ];
+  const ci = code.search(/▋\s*Combate/i);
+  if (ci >= 0) {
+    let head = code.slice(0, ci), tail = code.slice(ci);
+    comb.forEach(([l, v, changed]) => {
+      if (!changed) return;
+      const re = new RegExp(`(→\\s*${reEsc(l)}\\s*:${CLOSE}[ \\t]*)([^\\n<]*)`, 'i');
+      let n = 0; tail = tail.replace(re, (m, pre) => { n++; return pre + v; });
+      if (n) hechos.push(`Combate: ${l}`); else manual.push(`Combate ${l}: no lo encontré (${v.replace(/\[\/?b\]/g, '')})`);
+    });
+    code = head + tail;
+  } else if (comb.some(x => x[2])) manual.push('Combate: no encontré el bloque «▋ Combate» para recalcularlo');
+  if (pB.pp !== pC.pp || pB.ppTxt !== pC.ppTxt) rep(/(▋\s*Puntos de Pociones\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)([^\n<]*)/i, (m, pre) => pre + `${pC.ppTxt} = [b]${pC.pp}[/b]`, 'Puntos de Pociones');
+  if (pB.pr !== pC.pr || pB.prTxt !== pC.prTxt) rep(/(▋\s*Puntos de Rituales\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)([^\n<]*)/i, (m, pre) => pre + `${pC.prTxt} = [b]${pC.pr}[/b]`, 'Puntos de Rituales');
+  if (num(base.extra.pd) !== num(cur.extra.pd)) rep(/(▋\s*Puntos de Destino\s*:(?:\s*(?:\[\/color\]|<\/span>|<\/b>))*[ \t]*)(?:\[b\])?\d+(?:\[\/b\])?/i, (m, pre) => pre + `[b]${num(cur.extra.pd)}[/b]`, 'Puntos de Destino');
+  // 7. listas (arcanos, trasfondos, idiomas, talentos...): por líneas
+  let lines = code.split('\n');
+  const findLine = (name, from) => { const n = norm(name); for (let i = 0; i < lines.length; i++) { const k = norm(lineKey(lines[i])); if (k === n || k.startsWith(n + ':') || k.startsWith(n + ' :') || k.startsWith(n + ' —') || k.startsWith(n + ' -') || k.startsWith(n + '.')) return i; } return -1; };
+  const cloneLine = (i, oldName, newText) => {
+    const l = lines[i]; const at = l.indexOf(oldName);
+    if (at < 0) return null;
+    const suf = (l.match(/((?:\[\/\w+\]|<\/\w+>)\s*)+$/) || [''])[0];
+    const pre = l.slice(0, at);
+    // si el prefijo abre etiquetas que se cierran justo tras el nombre ([b]Nombre[/b]: nota), respetarlas
+    const afterName = l.slice(at + oldName.length).match(/^((?:\[\/\w+\]|<\/\w+>)*)/)[1];
+    return pre + newText.name + afterName + (newText.rest || '') + (afterName ? '' : suf);
+  };
+  // arcanos
+  const kA = a => norm(a.name);
+  const quitados = base.arcanos.filter(a => !cur.arcanos.some(b => kA(b) === kA(a)));
+  const nuevos = cur.arcanos.filter(a => !base.arcanos.some(b => kA(b) === kA(a)));
+  quitados.forEach(a => { const i = findLine(a.name); if (i >= 0) { lines.splice(i, 1); hechos.push(`Quitado: ${a.name}`); } else manual.push(`Arcano ${a.name}: lo quitaste, borralo a mano`); });
+  nuevos.forEach(a => {
+    const sib = [...cur.arcanos].reverse().find(b => b !== a && b.type === a.type && b.tier === a.tier && base.arcanos.some(x => kA(x) === kA(b)) && findLine(b.name) >= 0)
+      || null;
+    if (!sib) { manual.push(`Arcano nuevo ${a.name} (${tierLbl(a.type, a.tier)}): agregalo a mano, no encontré otro del mismo tipo y nivel`); return; }
+    const i = findLine(sib.name);
+    const nl = cloneLine(i, sib.name, { name: a.name, rest: a.nota ? ': ' + a.nota : '' });
+    if (nl == null) { manual.push(`Arcano nuevo ${a.name}: agregalo a mano`); return; }
+    lines.splice(i + 1, 0, nl); hechos.push(`Agregado: ${a.name}`);
+  });
+  cur.arcanos.forEach(a => { const o = base.arcanos.find(b => kA(b) === kA(a)); if (o && (o.tier !== a.tier || o.type !== a.type)) manual.push(`Arcano ${a.name}: cambió de tipo o nivel, movelo a mano`); });
+  // trasfondos
+  const kB = x => norm(`${x.t}|${x.c}|${x.e}`);
+  const bgLine = x => { for (let i = 0; i < lines.length; i++) { const k = norm(lineKey(lines[i])); if (k.includes(norm(x.t)) && k.includes(norm(x.c)) && (x.e ? k.includes(norm(x.e)) : !/(—|>|-)\s*\S+\s+(i|ii|iii|iv|v|vi)\b.*(—|>|-)/.test(k)) && /\b(i|ii|iii|iv|v|vi)\b/.test(k)) { if (!x.e) { const tail = k.split(norm(x.c))[1] || ''; if (/^\s*(—|>|-)\s*[a-z]/.test(tail)) continue; } return i; } } return -1; };
+  cur.bgs.forEach(x => {
+    const o = base.bgs.find(y => kB(y) === kB(x));
+    if (o && num(o.v) === num(x.v)) return;
+    if (o) { const i = bgLine(o); if (i >= 0) { const l = lines[i]; const re = new RegExp(`(${reEsc(o.e || o.c)}[^IVX\\n]{0,12}?)\\b(${ROMAN[num(o.v)]})\\b`); if (re.test(l)) { lines[i] = l.replace(re, (m, a) => a + ROMAN[num(x.v)]); hechos.push(`Trasfondo ${x.t} ${x.c}${x.e ? ' > ' + x.e : ''}`); return; } } }
+    if (!o) {
+      const sibs = base.bgs.filter(y => cur.bgs.some(z => kB(z) === kB(y)));
+      const sib = [...sibs].reverse().find(y => y.t === x.t && y.c === x.c) || [...sibs].reverse().find(y => y.t === x.t) || sibs[sibs.length - 1];
+      const i = sib ? bgLine(sib) : -1;
+      if (i >= 0) {
+        const l = lines[i], st = l.indexOf(sib.t), rm = new RegExp(`\\b${ROMAN[num(sib.v)]}\\b`), rest = st >= 0 ? l.slice(st) : '', mm = rest.match(rm);
+        if (st >= 0 && mm) {
+          const seg = rest.slice(0, mm.index), sep = (seg.match(/\s(—|>|-|–)\s/) || [' — ', '—'])[1];
+          const after = rest.slice(mm.index + mm[0].length).match(/^((?:\[\/\w+\]|<\/\w+>)*)/)[1];
+          const txt = [x.t, x.c, x.e].filter(Boolean).join(` ${sep} `) + ' ' + ROMAN[num(x.v)];
+          lines.splice(i + 1, 0, l.slice(0, st) + txt + after + (x.nota ? ': ' + x.nota : ''));
+          hechos.push(`Agregado: ${x.t} ${x.c}${x.e ? ' > ' + x.e : ''}`); return;
+        }
+      }
+    }
+    manual.push(`Trasfondo ${x.t} — ${x.c}${x.e ? ' — ' + x.e : ''} ${ROMAN[num(x.v)]}: ${o ? 'cambialo' : 'agregalo'} a mano`);
+  });
+  base.bgs.forEach(x => { if (!cur.bgs.some(y => kB(y) === kB(x))) manual.push(`Trasfondo ${x.t} — ${x.c}${x.e ? ' — ' + x.e : ''}: lo quitaste, borralo a mano`); });
+  // idiomas
+  cur.idiomas.forEach(x => {
+    const o = base.idiomas.find(y => norm(y.n) === norm(x.n));
+    if (o && o.nivel === x.nivel) return;
+    if (o) { const i = findLine(o.n); if (i >= 0 && lines[i].includes(o.nivel)) { lines[i] = lines[i].replace(o.nivel, x.nivel); hechos.push(`Idioma ${x.n}`); return; } }
+    manual.push(`Idioma ${x.n} (${x.nivel}): ${o ? 'cambialo' : 'agregalo'} a mano`);
+  });
+  // ventajas y especializaciones
+  ADVS.forEach(a => { if (num(base.adv[a]) !== num(cur.adv[a])) { const i = lines.findIndex(l => new RegExp(`${reEsc(a)}\\s+(I|II|III|IV|V)\\b`).test(plain(l))); if (i >= 0 && num(cur.adv[a]) > 0) { lines[i] = lines[i].replace(new RegExp(`(${reEsc(a)}\\s+)(I|II|III|IV|V)\\b`), (m, p) => p + ROMAN[num(cur.adv[a])]); hechos.push(a); } else manual.push(`Ventaja ${a} ${ROMAN[num(cur.adv[a])] || '(quitada)'}: a mano`); } });
+  ESP_RAMAS.forEach(r => { if (num(base.esp[r]) !== num(cur.esp[r])) manual.push(`Especialización ${r}: ahora ${ROMAN[num(cur.esp[r])] || 'ninguna'}, revisala a mano`); });
+  // talentos y vínculos
+  cur.talentos.forEach(x => { if (!base.talentos.some(y => norm(y.n) === norm(x.n) && norm(y.nota) === norm(x.nota))) manual.push(`Talento ${x.n}${x.nota ? ' (' + x.nota + ')' : ''}: agregalo a mano`); });
+  base.talentos.forEach(x => { if (!cur.talentos.some(y => norm(y.n) === norm(x.n))) manual.push(`Talento ${x.n}: lo quitaste, borralo a mano`); });
+  cur.vinculos.forEach(x => { if (!base.vinculos.some(y => norm(y.pj) === norm(x.pj) && y.tipo === x.tipo)) manual.push(`${x.tipo} con ${x.pj}: agregalo a mano`); });
+  if (norm(base.titulos) !== norm(cur.titulos)) manual.push('Títulos académicos: cambiaron, revisalos a mano');
+  code = lines.join('\n');
+  return { code, hechos: [...new Set(hechos)], manual };
+}
+// Junta el texto nuevo con el código viejo línea a línea: las líneas que no cambiaron conservan sus enlaces, colores e imágenes.
+function mezclarLineas(seg, nuevo) {
+  const nk = s => norm(plain(String(s).replace(/\[img[^\]]*\][\s\S]*?\[\/img\]/gi, '').replace(/<img[^>]*>/gi, ''))).replace(/\s+/g, ' ');
+  const O = seg.split('\n'), N = nuevo.split('\n').filter(l => l.trim());
+  const oi = O.map((l, i) => ({ l, i, k: nk(l) })).filter(x => x.k), nkN = N.map(nk);
+  const n = oi.length, m = N.length, L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = oi[i].k === nkN[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const match = new Map(); let i = 0, j = 0;
+  while (i < n && j < m) { if (oi[i].k === nkN[j]) { match.set(oi[i].i, j); i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++; }
+  const out = []; let nj = 0;
+  O.forEach((l, idx) => {
+    const k = nk(l);
+    if (!k) { out.push(l); return; }
+    if (match.has(idx)) { const jj = match.get(idx); while (nj < jj) out.push(N[nj++]); out.push(l); nj = jj + 1; }
+  });
+  // lo nuevo que quedó al final va antes de las líneas vacías del cierre
+  let tailBlank = []; while (out.length && !out[out.length - 1].trim()) tailBlank.unshift(out.pop());
+  while (nj < m) out.push(N[nj++]);
+  return out.concat(tailBlank).join('\n');
+}
+function labelDe(p) {
+  const m = { nombre: 'Nombre y Apellido', 'd.avatar': 'Avatar/PB', 'd.multicuenta': 'Multicuenta', 'd.nacimiento': 'Lugar de Nacimiento', 'd.residencia': 'Lugar de Residencia', 'd.clase': 'Clase Social', 'd.fechaNac': 'Fecha de Nacimiento', 'd.edad': 'Edad', 'd.etapa': 'Etapa', 'd.orientacion': 'Orientación Sexual', 'd.sangre': 'Tipo de Sangre', 'd.raza': 'Raza', 'd.casa': 'Casa', 'd.curso': 'Curso', 'd.faccion': 'Facción', 'd.quidditch': 'Equipo de Quidditch', 'desc.fuerte': 'Punto Fuerte', 'desc.debil': 'Punto Débil', 'desc.gustos': 'Gustos/Aficiones', 'desc.fobias': 'Fobias/manías', 'desc.mascota': 'Mascota', 'extra.pdPerdida': 'Pérdida de Puntos de Destino', 'desc.fisica': 'Descripción Física', 'desc.psico': 'Descripción Psicológica', 'desc.historia': 'Historia', 'desc.familia': 'Familia' };
+  return m[p] || p;
+}
+const esCodigoForo = t => /\[color=|\[spoiler|<div|<span|<center|\[b\]/i.test(t || '');
+function guardarPlantilla(raw, baseFicha) {
+  const P = plantillaDe(ficha);
+  P.modo = 'personal'; P.codigo = raw; P.base = fichaClone(baseFicha); delete P.base.plantilla; delete P.base.jobState;
+}
+
+/* ---- pestaña «Código para el foro» ---- */
+function renderCodigo() {
+  const P = plantillaDe(ficha);
+  const opt = (v, t, d) => `<label class="fc-opt${P.modo === v ? ' on' : ''}"><input type="radio" name="fc-modo" value="${v}" ${P.modo === v ? 'checked' : ''}><span><b>${t}</b><small>${d}</small></span></label>`;
+  let h = `<div class="card"><h2>Código de la ficha para el foro</h2>
+    <p class="muted small" style="margin-top:-4px">Elegí el modelo. Cada vez que cambies algo en la ficha, el código se actualiza solo: copialo y pegalo al editar tu ficha en el foro.</p>
+    <div class="fc-opts">${opt('compacta', 'Compacta', 'El modelo oficial con pestañas (un solo mensaje).')}${opt('extendida', 'Extendida', 'El modelo oficial largo, en dos mensajes (parte 1 y parte 2).')}${opt('personal', 'Personalizada', 'Tu propio diseño: pegás tu código una vez y se edita sólo lo que cambies.')}</div></div>`;
+  if (P.modo === 'compacta') {
+    h += `<div class="card"><div class="row"><h3 style="margin:0">Modelo compacto</h3><span class="spacer"></span><button class="btn sm primary" data-fc-copy="0">Copiar código</button></div>
+      <p class="muted small">La imagen sale del campo «URL de la imagen» (Datos › Cabecera), de 200 × 225.</p><textarea class="fc-out" readonly rows="12" data-fc-out="0">${esc(codigoCompacto())}</textarea></div>`;
+  } else if (P.modo === 'extendida') {
+    const [p1, p2] = codigoExtendido();
+    h += `<div class="card"><label class="fx-f"><span>Frase que te caracterice</span><input type="text" data-p="extra.frase" value="${esc(ficha.extra.frase || '')}" placeholder="Frase que te caracterice"></label>
+      <p class="muted small">La imagen sale del campo «URL de la imagen» (Datos › Cabecera).</p></div>
+      <div class="card"><div class="row"><h3 style="margin:0">Parte 1 · Datos y descripción</h3><span class="spacer"></span><button class="btn sm primary" data-fc-copy="0">Copiar parte 1</button></div><textarea class="fc-out" readonly rows="9" data-fc-out="0">${esc(p1)}</textarea></div>
+      <div class="card"><div class="row"><h3 style="margin:0">Parte 2 · Características, magia y canjes</h3><span class="spacer"></span><button class="btn sm primary" data-fc-copy="1">Copiar parte 2</button></div><textarea class="fc-out" readonly rows="9" data-fc-out="1">${esc(p2)}</textarea></div>`;
+  } else {
+    if (!P.codigo) {
+      h += `<div class="card"><h3>Pegá el código de tu ficha</h3>
+        <p class="muted small">En el foro, abrí tu ficha, tocá <b>Editar</b>, copiá todo el mensaje y pegalo acá. Se guarda para este personaje. Si es la primera vez, también podés cargar los datos de la ficha desde ese código.</p>
+        <textarea id="fc-in" rows="10" placeholder="<div class=…>[color=…]▋ Nombre y Apellido:[/color] …"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn sm primary" id="fc-save">Guardar mi código</button><button class="btn sm" id="fc-save-load">Guardar y cargar los datos en la ficha</button></div></div>`;
+    } else {
+      const r = actualizarCodigo(P.codigo, P.base || ficha, ficha);
+      h += `<div class="card"><div class="row"><h3 style="margin:0">Tu código actualizado</h3><span class="spacer"></span><button class="btn sm primary" data-fc-copy="0">Copiar código</button></div>
+        ${r.hechos.length ? `<p class="small fc-ok">Actualizado: ${r.hechos.map(esc).join(' · ')}</p>` : '<p class="small muted">Todavía no cambiaste nada desde que guardaste tu código: es igual al publicado.</p>'}
+        ${r.manual.length ? `<div class="fc-warn"><b>Revisá a mano</b><ul>${r.manual.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : ''}
+        <textarea class="fc-out" readonly rows="12" data-fc-out="0">${esc(r.code)}</textarea>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="fc-publicado">Ya lo publiqué: guardar esta versión</button><span class="spacer"></span><button class="btn sm ghost" id="fc-ver">Ver código guardado</button><button class="btn sm ghost danger" id="fc-borrar">Reemplazar mi código</button></div>
+        <textarea class="fc-out" readonly rows="8" id="fc-orig" hidden>${esc(P.codigo)}</textarea></div>`;
+    }
+  }
+  return h;
+}
+function bindCodigo(body) {
+  const P = plantillaDe(ficha);
+  body.querySelectorAll('input[name=fc-modo]').forEach(r => r.onchange = () => { P.modo = r.value; persist(); renderFicha(); });
+  body.querySelectorAll('[data-fc-copy]').forEach(b => b.onclick = () => copy(body.querySelector(`[data-fc-out="${b.dataset.fcCopy}"]`).value));
+  const save = load => {
+    const raw = body.querySelector('#fc-in').value; if (!raw.trim()) { toast('Pegá primero tu código'); return; }
+    let parsed = null; try { parsed = normFicha(parseFichaForo(raw).ficha); } catch (e) { }
+    if (load && parsed) { const js = ficha.jobState, pl = ficha.plantilla; ficha = normFicha(parsed); ficha.jobState = js || {}; ficha.plantilla = pl; }
+    guardarPlantilla(raw, parsed && !load ? mezclaBase(parsed) : ficha);
+    persist(); renderFicha(); toast('Código guardado para este personaje');
+  };
+  const s1 = body.querySelector('#fc-save'); if (s1) s1.onclick = () => save(false);
+  const s2 = body.querySelector('#fc-save-load'); if (s2) s2.onclick = () => save(true);
+  const pub = body.querySelector('#fc-publicado'); if (pub) pub.onclick = () => { const r = actualizarCodigo(P.codigo, P.base || ficha, ficha); guardarPlantilla(r.code, ficha); persist(); renderFicha(); toast('Guardado como tu versión publicada'); };
+  const ver = body.querySelector('#fc-ver'); if (ver) ver.onclick = () => { const t = body.querySelector('#fc-orig'); t.hidden = !t.hidden; };
+  const del = body.querySelector('#fc-borrar'); if (del) del.onclick = () => { if (!window.confirm('¿Borrar el código guardado de este personaje para pegar uno nuevo?')) return; P.codigo = ''; P.base = null; persist(); renderFicha(); };
+}
+// Si guardás tu código sin cargar los datos, la base es lo que dice el código; lo que el código no tenga se toma de la ficha actual.
+function mezclaBase(parsed) {
+  const out = fichaClone(ficha); delete out.plantilla; delete out.jobState;
+  const lleno = v => Array.isArray(v) ? v.length > 0 : (v !== '' && v !== null && v !== undefined);
+  if (parsed.nombre) out.nombre = parsed.nombre;
+  ['d', 'desc', 'extra'].forEach(g => Object.keys(parsed[g] || {}).forEach(k => { if (lleno(parsed[g][k])) out[g][k] = parsed[g][k]; }));
+  const algoNum = o => Object.values(o || {}).some(v => num(v) > 0);
+  ['attrs', 'skills', 'adv', 'esp'].forEach(g => { if (algoNum(parsed[g])) out[g] = Object.assign({}, out[g], parsed[g]); });
+  ['artes', 'bgs', 'arcanos', 'idiomas', 'talentos', 'vinculos'].forEach(g => { if (lleno(parsed[g])) out[g] = parsed[g]; });
+  if (parsed.titulos) out.titulos = parsed.titulos;
+  return out;
+}
+
 /* ============ Personajes (varias fichas) ============ */
 const pjName = p => (p.ficha.nombre||'').trim() || 'Sin nombre';
 function refreshAll(){ renderFicha(); renderWho(); if(ui.tab==='empleos') renderEmpleos(); if(ui.tab==='editor') renderEditor(); pintarPjs(); }
@@ -6754,6 +7148,7 @@ addEventListener('beforeunload',flushSave);
 renderFicha();
 pintarPjs();
 window.reSetTab = setTab;
+window.grimorioFicha = () => ficha;
 setTab(ui.tab||'empleos');
 
 })();
