@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PAM · Mi PJ (HP Avada Kedavra)
 // @namespace    https://jesleytherabbit-prog.github.io/PAM/
-// @version      1.1.0
+// @version      1.2.0
 // @description  Panel con tus grageas, tu ficha, tu bóveda y los roles donde te toca responder; revisa las cuentas de la bóveda antes de publicar y manda todo a PAM.
 // @author       Hana Park
 // @match        https://hp-avada-kedavra.foroactivo.com/*
@@ -35,7 +35,7 @@
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const num = t => { if (t == null) return null; const m = String(t).replace(/\s/g, '').match(/[+\-−]?\d[\d.,]*/); if (!m) return null; const v = parseInt(m[0].replace('−', '-').replace(/[.,]/g, ''), 10); return isNaN(v) ? null : v; };
-  const fmt = n => n == null ? '—' : Number(n).toLocaleString('es-ES');
+  const fmt = n => n == null ? '—' : Number(n).toLocaleString('es-AR');
   const abs = h => h ? new URL(h, location.origin).href : '';
   const gv = (k, d) => { try { const v = GM_getValue(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const sv = (k, v) => GM_setValue(k, JSON.stringify(v));
@@ -56,11 +56,18 @@
   const dias = d => d ? Math.floor((Date.now() - d) / 864e5) : null;
   const haceTxt = d => { const n = dias(d); return n == null ? '' : n <= 0 ? 'hoy' : n === 1 ? 'hace 1 día' : `hace ${n} días`; };
 
+  /* texto de un mensaje con espacios entre etiquetas (en una página leída por fetch, innerText pega todo) */
+  function textoDe(el) {
+    const out = []; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let n;
+    while ((n = w.nextNode())) { if (n.nodeType === 3) out.push(n.nodeValue); else if (/^(BR|DIV|P|LI|TR|H\d)$/.test(n.nodeName)) out.push('\n'); else if (/^(TD|SPAN|STRONG|B|I|EM|FONT|DD|DT|LABEL|A)$/.test(n.nodeName)) out.push(' '); }
+    return out.join('').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ');
+  }
   function postsDe(doc) {
     return [...doc.querySelectorAll('div.post')].filter(e => /^p\d+$/.test(e.id)).map(p => {
       const a = p.querySelector('.author a[href*="/u"]'), au = p.querySelector('.author'), c = p.querySelector('.content') || p;
       return { id: p.id.slice(1), autor: a ? a.textContent.trim() : '', fecha: ((au ? au.textContent : '').match(FECHA) || [''])[0],
-        texto: (c.innerText || c.textContent || '').replace(/ /g, ' '), imgs: c.querySelectorAll('img').length, el: c };
+        texto: textoDe(c), imgs: c.querySelectorAll('img').length, el: c };
     });
   }
   async function paginas(urlTema) {
@@ -107,10 +114,37 @@
   }
 
   /* ---------------- bóveda ---------------- */
-  const RE_MOV = /Grageas\s+iniciales\s*»?\s*:?\s*([\d.,]+)[\s\S]{0,120}?(?:añaden\s*\/?\s*quitan|Quitan|Añaden)\s*»?\s*:?\s*([+\-−]?\s*[\d.,]+)[\s\S]{0,160}?Grageas\s+actuales\s*»?\s*:?\s*([\d.,]+)[\s\S]{0,80}?Grageas\s+totales\s*»?\s*:?\s*([\d.,]+)/gi;
-  const RE_MOV2 = /GRAGEAS\s*Iniciales\s*([\d.,]+)\s*(?:Quitan|Añaden|Añade|Quita)\s*([+\-−]?[\d.,]+)\s*Actuales\s*([\d.,]+)\s*Totales\s*([\d.,]+)/gi;
-  const RE_PL = /Puntos\s+Legendarios\s+actuales\s*»?\s*:?\s*([\d.,]+)[\s\S]{0,120}?Puntos\s+Legendarios\s+totales\s*»?\s*:?\s*([\d.,]+)|Puntos\s+Legendarios\s+totales\s*»?\s*:?\s*([\d.,]+)[\s\S]{0,120}?Puntos\s+Legendarios\s+actuales\s*»?\s*:?\s*([\d.,]+)/gi;
-  const RE_PL2 = /PUNTOS\s*LEGENDARIOS\s*Iniciales\s*([\d.,]+)\s*(?:Quitan|Añaden)\s*([+\-−]?[\d.,]+)\s*Actuales\s*([\d.,]+)\s*Totales\s*([\d.,]+)/gi;
+  /* Lector genérico de movimientos de bóveda: entiende formularios {…», tablas «GRAGEAS Iniciales…» y el estilo
+     «Grageas actuales: X / +N por… / Grageas restantes: Y / Grageas totales: Z». Devuelve por sección (gr / pl):
+     {ini, fin, tot, delta} con fin = saldo final del mensaje. */
+  function leerSaldos(texto) {
+    const T = String(texto || '').replace(/ /g, ' ');
+    const num2 = t => { const m = String(t).replace(/\s/g, '').match(/[+\-−]?\d[\d.,]*/); if (!m) return null; const v = parseInt(m[0].replace('−', '-').replace(/[.,](?=\d{3}(\D|$))/g, '').replace(/[.,]\d{1,2}$/, ''), 10); return isNaN(v) ? null : v; };
+    const re = /(puntos\s+legendarios|\bPL\b|grageas)?[\s{]*\b(iniciales|actuales|restantes|totales)\b\s*(?:de\s+la\s+b[oó]veda)?\s*[»:]?\s*(?:de\s+)?([+\-−]?\s*\d[\d.,]*)/gi;
+    const sec = { gr: { campos: [] }, pl: { campos: [] } };
+    let actual = 'gr', m, ultimaPos = 0;
+    /* el contexto cambia cuando aparece «Puntos Legendarios»/«PL» o «Grageas» como encabezado */
+    const marcas = [];
+    const reM = /(puntos\s+legendarios|\bPL\b)|(grageas)/gi; let mm;
+    while ((mm = reM.exec(T))) { if (/^[\s:»]*(grageas|inventario|puntos\s+legendarios|registro|\bPL\b)/i.test(T.slice(mm.index + mm[0].length, mm.index + mm[0].length + 30))) continue; /* pestañas: «Grageas · Inventario · PL · Registro» */ marcas.push({ i: mm.index, s: mm[1] ? 'pl' : 'gr' }); }
+    const seccionEn = i => { let s = 'gr'; for (const k of marcas) { if (k.i > i) break; s = k.s; } return s; };
+    while ((m = re.exec(T))) {
+      const s = m[1] ? (/grageas/i.test(m[1]) ? 'gr' : 'pl') : seccionEn(m.index);
+      sec[s].campos.push({ c: m[2].toLowerCase(), v: num2(m[3]) });
+    }
+    const out = {};
+    for (const s of ['gr', 'pl']) {
+      const C = sec[s].campos.filter(x => x.v != null); if (!C.length) continue;
+      const res = C.filter(x => x.c === 'restantes'), act = C.filter(x => x.c === 'actuales'), ini = C.filter(x => x.c === 'iniciales'), tot = C.filter(x => x.c === 'totales');
+      let fin, inicio;
+      if (res.length) { fin = res[res.length - 1].v; inicio = act.length ? act[0].v : (ini.length ? ini[0].v : null); }
+      else if (act.length) { fin = act[act.length - 1].v; inicio = ini.length ? ini[0].v : null; }
+      else continue;
+      out[s] = { ini: inicio, fin, tot: tot.length ? tot[tot.length - 1].v : null, delta: inicio != null ? fin - inicio : null };
+    }
+    return out;
+  }
+
   async function leerBoveda() {
     const temas = await buscarTemas('search_author=' + encodeURIComponent(YO) + '&search_where=f' + BOVEDA_FORO + '&show_results=topics&search_terms=all');
     for (const t of temas.filter(x => x.foro === BOVEDA_FORO)) {
@@ -119,22 +153,23 @@
       if (!p0.length || norm(p0[0].autor) !== norm(YO)) continue;
       const todos = todosLosPosts(P);
       const movs = []; let act = null, tot = null, pla = null, plt = null, revision = null, nota = null, ini = null;
-      const cab = p0[0].texto.match(/Iniciales\s*([\d.,]+)/i); if (cab) ini = num(cab[1]);
+      /* cabecera (primer mensaje): saldo de respaldo e «Iniciales» */
+      const cab = leerSaldos(p0[0].texto);
+      if (cab.gr) { ini = cab.gr.ini; act = cab.gr.fin; tot = cab.gr.tot; }
+      if (cab.pl) { pla = cab.pl.fin; plt = cab.pl.tot; }
       todos.forEach(p => {
-        const tuyo = norm(p.autor) === norm(YO), tx = p.texto;
-        if (!tuyo && /Revisi[oó]n\s+de\s+B[oó]veda/i.test(tx)) {
+        if (p.id === p0[0].id) return;
+        const tuyo = norm(p.autor) === norm(YO), tx = p.texto, sal = leerSaldos(tx);
+        const esRev = !tuyo && /Revisi[oó]n\s+de\s+B[oó]veda/i.test(tx);
+        if (!tuyo && !esRev) { const t2 = tx.replace(/\s+/g, ' ').trim(); if (t2.length > 6) nota = { autor: p.autor, fecha: p.fecha, texto: t2.slice(0, 280) }; return; }
+        if (esRev) {
           revision = { autor: p.autor, fecha: p.fecha, url: `${t.url.split('#')[0]}#${p.id}` };
-          const a = tx.match(/Grageas\s+actuales\s*»?\s*:?\s*([\d.,]+)/i), tt = tx.match(/Grageas\s+totales\s*»?\s*:?\s*([\d.,]+)/i), ii = tx.match(/Grageas\s+iniciales\s*»?\s*:?\s*([\d.,]+)/i);
-          if (a) act = num(a[1]); if (tt) tot = num(tt[1]); if (ii && ini == null) ini = num(ii[1]);
-          const pa = tx.match(/Puntos\s+Legendarios\s+actuales\s*»?\s*:?\s*([\d.,]+)/i), pt = tx.match(/Puntos\s+Legendarios\s+totales\s*»?\s*:?\s*([\d.,]+)/i);
-          if (pa) pla = num(pa[1]); if (pt) plt = num(pt[1]);
           const resto = tx.replace(/\{[^»]*»\s*[^{]*/g, ' ').replace(/\s+/g, ' ').trim();
           nota = resto.length > 6 ? { autor: p.autor, fecha: p.fecha, texto: resto.slice(0, 280) } : null;
-          return;
+          if (sal.gr && ini == null && sal.gr.ini != null) ini = sal.gr.ini;
         }
-        if (!tuyo) { const t2 = tx.replace(/\s+/g, ' ').trim(); if (t2.length > 6) nota = { autor: p.autor, fecha: p.fecha, texto: t2.slice(0, 280) }; return; }
-        [RE_MOV, RE_MOV2].forEach(re => { re.lastIndex = 0; let m; while ((m = re.exec(tx))) { const a = num(m[3]); if (a == null) continue; movs.push({ d: num(m[2]), act: a, fecha: p.fecha }); act = a; const tt = num(m[4]); if (tt != null) tot = tt; } });
-        [RE_PL, RE_PL2].forEach(re => { re.lastIndex = 0; let m; while ((m = re.exec(tx))) { if (re === RE_PL2) { pla = num(m[3]); plt = num(m[4]); } else if (m[1]) { pla = num(m[1]); plt = num(m[2]); } else { plt = num(m[3]); pla = num(m[4]); } } });
+        if (sal.gr) { act = sal.gr.fin; if (sal.gr.tot != null) tot = sal.gr.tot; if (tuyo && sal.gr.delta != null) movs.push({ d: sal.gr.delta, act: sal.gr.fin, fecha: p.fecha }); }
+        if (sal.pl) { pla = sal.pl.fin; if (sal.pl.tot != null) plt = sal.pl.tot; }
       });
       const ultTuyo = [...todos].reverse().find(p => norm(p.autor) === norm(YO));
       return { url: t.url, tid: tidDe(t.url), titulo: t.titulo, act, tot, ini, pla, plt, movs: movs.slice(-3).reverse(), revision, nota,
@@ -392,11 +427,23 @@
         prev = { act: b.act, tot: b.tot != null ? b.tot : (prev && prev.tot) };
       });
     });
+    /* estilo libre: «Grageas actuales: X» + líneas «+N grageas por…» = «Grageas restantes: Y» */
+    [['grageas', 'Grageas', ref && ref.act], ['puntos\\s+legendarios', 'Puntos Legendarios', ref && ref.pla]].forEach(([rot, nombre, r0]) => {
+      const T = limpio(texto);
+      const ra = new RegExp(`${rot}\\s+actuales\\s*[:»]?\\s*([\\d.,]+)([\\s\\S]*?)${rot}\\s+restantes\\s*[:»]?\\s*([\\d.,]+)`, 'i');
+      const m = T.match(ra); if (!m || /\{/.test(m[2])) return;
+      const ini = num(m[1]), fin = num(m[3]);
+      const deltas = [...m[2].matchAll(new RegExp(`([+\\-−]\\s?\\d[\\d.,]*)\\s*${rot}`, 'gi'))].map(x => num(x[1]));
+      const d = deltas.reduce((a, b) => a + b, 0);
+      if (r0 != null && ini !== r0) prob.push(`<b>${nombre}:</b> empezás con ${fmt(ini)}, pero tu bóveda está en ${fmt(r0)}.`);
+      if (deltas.length && ini + d !== fin) prob.push(`<b>${nombre}:</b> ${fmt(ini)} ${d < 0 ? '−' : '+'} ${fmt(Math.abs(d))} da ${fmt(ini + d)}, no ${fmt(fin)}.`);
+      if (fin < 0) prob.push(`<b>${nombre}:</b> quedarías en negativo (${fmt(fin)}).`);
+    });
     const inv = limpio(texto).match(/Nuevo\s+inventario\s*»([\s\S]*?)(?:Enlaces\s*»([^{\n]*)|$)/i);
     if (inv && (!inv[2] || inv[2].replace(/[\s|·✦—-]/g, '').length < 3)) prob.push('<b>Inventario:</b> faltan los enlaces (son obligatorios).');
     return prob;
   }
-  const tieneFormulario = t => /(Grageas|Puntos\s+Legendarios)\s+iniciales\s*»|Nuevo\s+inventario\s*»/i.test(limpio(t));
+  const tieneFormulario = t => /(Grageas|Puntos\s+Legendarios)\s+iniciales\s*»|Nuevo\s+inventario\s*»|(Grageas|Puntos\s+Legendarios)\s+restantes\s*[:»]/i.test(limpio(t));
   function textoEditor(ta) {
     try { const $ = W.jQuery || W.$; const inst = $ && $(ta).sceditor && $(ta).sceditor('instance'); if (inst && inst.val) return inst.val(); } catch (e) {}
     return ta.value;
