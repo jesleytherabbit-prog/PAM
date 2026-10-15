@@ -1099,6 +1099,22 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
 .home-ses .hs-msg{color:var(--bad);font-size:.82rem;margin:8px 0 0}
 :root[data-skin="pixel"] .home-ses,:root[data-skin="pixel"] .home-ses button:not(.hs-link){border-radius:0}
 :root[data-skin="pixel"] .ses-list button.ses-b,:root[data-skin="pixel"] .ses-code,:root[data-skin="pixel"] .ses-btn .ses-ic{border-radius:0}
+
+/* menú único desplegable */
+.mainnav{justify-content:center}
+.mainnav .nav-all{display:inline-flex;align-items:center;gap:8px;border-color:var(--line-strong);background:color-mix(in srgb,var(--panel) 75%,transparent);color:var(--parchment);max-width:100%}
+.mainnav .nav-all.active{border-color:color-mix(in srgb,var(--gold) 50%,transparent)}
+.nav-ham{color:var(--gold-bright);font-size:1rem;line-height:1}
+.nav-cur{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-cur .nc-g{color:var(--parchment-dim);font-weight:600}
+.nav-mega{flex-direction:row;flex-wrap:wrap;gap:6px 14px;width:min(860px,calc(100vw - 32px));padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.nav-mega[hidden]{display:none}
+.nm-col{display:flex;flex-direction:column;gap:2px;min-width:0}
+.nm-h{font-family:var(--serif);font-style:italic;font-size:1.05rem;color:var(--parchment);padding:4px 10px 6px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.nm-h span{color:var(--gold-bright);font-style:normal;font-size:.85em}
+.mainnav .nav-mega button{white-space:normal}
+@media(max-width:860px){.nav-mega{width:auto;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.nav-mega{grid-template-columns:1fr;max-height:70vh;overflow:auto}.nav-cur .nc-g{display:none}}
 </style>
 </head>
 <body>
@@ -5842,7 +5858,7 @@ function emptyFicha(){
   const adv = {}; ADVS.forEach(a=>adv[a]=0);
   const esp = {}; ESP_RAMAS.forEach(r=>esp[r]=0);
   return {nombre:'', attrs, skills, artes:[], bgs:[], adv, jobState:{},
-    d:{avatar:'',multicuenta:'',nacimiento:'',residencia:'',clase:'',fechaNac:'',edad:'',etapa:'Joven',orientacion:'',sangre:'',raza:'Humana',casa:'',curso:'',faccion:'',quidditch:''},
+    d:{avatar:'',multicuenta:'',nacimiento:'',residencia:'',clase:'',fechaNac:'',edad:'',etapa:'',orientacion:'',sangre:'',raza:'Humana',casa:'',curso:'',faccion:'',quidditch:''},
     desc:{fisica:'',psico:'',fuerte:'',debil:'',gustos:'',fobias:'',historia:'',familia:'',mascota:''},
     extra:{kicker:'',ocupacion:'',foto:'',limites:'',pd:1,pdPerdida:'',frase:''},
     arcanos:[], idiomas:[], esp, talentos:[], vinculos:[], titulos:'', otros:''};
@@ -6216,7 +6232,8 @@ function opts(list,sel){ return list.map(x=>`<option ${x===sel?'selected':''}>${
 function lvOpts(sel,max=5){ return SKILL_LV.slice(0,max+1).map((x,i)=>`<option value="${i}" ${+sel===i?'selected':''}>${x}</option>`).join(''); }
 const getP = p => p==='nombre' ? ficha.nombre : p.split('.').reduce((o,k)=>o?o[k]:'', ficha);
 function setP(p,v){ if(p==='nombre'){ ficha.nombre=v; return; } const ks=p.split('.'); let o=ficha; ks.slice(0,-1).forEach(k=>o=o[k]); o[ks[ks.length-1]]=v; }
-const etapaOf = () => ETAPAS[ficha.d.etapa] || ETAPAS.Joven;
+const SIN_ETAPA = {pa:0,u:0,h:0,lim:'',none:true};
+const etapaOf = () => ETAPAS[ficha.d.etapa] || SIN_ETAPA;
 const hasArc = n => ficha.arcanos.some(a=>norm(a.name)===norm(n));
 const sk = s => num(ficha.skills[s]);
 
@@ -6224,8 +6241,8 @@ const sk = s => num(ficha.skills[s]);
 /* Reglas del Sistema Avadense + Calculadora de Stats de Combate (raza, objetos y pociones de escena) */
 let combOpt = {warlock:null, herbivicus:null, fuerza:0, actividad:false, lic:false};
 function modsFicha(){
-  const r = norm(ficha.d.raza||'');
-  return { semiD:r.includes('semiduende'), semiG:r.includes('semigigante'),
+  const r = norm(ficha.d.raza||'').replace(/[^a-z]/g,'');
+  return { semiD:r.includes('semiduend'), semiG:r.includes('semigigant'),
     carstein:hasArc('Anillo de los Carstein'), warlockObj:hasArc('Armadura de Warlock'),
     maletin:hasArc('Maletín del pocionista inquieto'), bisu:hasArc('Bisutería Arcana'), herbiObj:hasArc('Herbivicus'),
     herbicida:hasArc('Poción herbicida'), vitae:hasArc('Planta Vitae'), solucion:hasArc('Solución del ritualista'), altar:hasArc('Altar del ritualista') };
@@ -6254,9 +6271,9 @@ function combate(opt){
     atkM: `Poder (${Po}) + Duelo (${b('Duelo')})`,
     luchaM: `(Ataque Mágico (${atkM}) + Defensa (${def}) - 5 + Iniciativa (${ini})) / 3`,
     def: `5 + Destreza (${D}) + Esquiva (${b('Esquiva')})` + extra(-(warl?2:0),'Armadura de Warlock') + extra(act,'Poción de actividad') + extra(L4,'Licantropía'),
-    pa: (opt.lic?'(':'') + `Base (${E.pa}) + ` + (M.carstein ? `Vigor (0, Anillo de los Carstein)` : M.semiG ? `Vigor × 3 (${vPA}, Semigigante)` : M.semiD ? `Vigor ÷ 2 (${vPA}, Semiduende)` : vigTxt) + ` + Voluntad (${W})` + (opt.lic?') × 2 (Licantropía)':''),
-    umbral: `Base (${E.u}) + ` + (M.semiD ? `Vigor ÷ 2 (${vUmb}, Semiduende)` : vigTxt) + extra(L4,'Licantropía'),
-    heridas: `Base (${E.h}) + Voluntad (${W})` + extra(opt.lic?2:0,'Licantropía')
+    pa: (opt.lic?'(':'') + (E.none ? 'Base (sin etapa) + ' : `Base (${E.pa}) + `) + (M.carstein ? `Vigor (0, Anillo de los Carstein)` : M.semiG ? `Vigor × 3 (${vPA}, Semigigante)` : M.semiD ? `Vigor ÷ 2 (${vPA}, Semiduende)` : vigTxt) + ` + Voluntad (${W})` + (opt.lic?') × 2 (Licantropía)':''),
+    umbral: (E.none ? 'Base (sin etapa) + ' : `Base (${E.u}) + `) + (M.semiD ? `Vigor ÷ 2 (${vUmb}, Semiduende)` : vigTxt) + extra(L4,'Licantropía'),
+    heridas: (E.none ? 'Base (sin etapa)' : `Base (${E.h})`) + ` + Voluntad (${W})` + extra(opt.lic?2:0,'Licantropía')
   };
   return { ini, atkF, def, atkM, luchaF:r(luchaFx), luchaM:r(luchaMx), luchaFx, luchaMx, pa, umbral, heridas, E, t, M, warl };
 }
@@ -6320,7 +6337,7 @@ function renderDatos(){
         ${fld('d.nacimiento','Lugar de Nacimiento')}${fld('d.residencia','Lugar de Residencia')}${fld('d.clase','Clase Social')}
         <div class="fx-sep"></div>
         ${fld('d.fechaNac','Fecha de Nacimiento',{ph:'dd/mm/aaaa'})}${fld('d.edad','Edad')}
-        <label class="fx-f"><span>Etapa</span><select data-p="d.etapa">${opts(Object.keys(ETAPAS),ficha.d.etapa)}</select></label>
+        <label class="fx-f"><span>Etapa</span><select data-p="d.etapa"><option value="" ${ficha.d.etapa?'':'selected'}>Sin etapa</option>${opts(Object.keys(ETAPAS),ficha.d.etapa)}</select></label>
         <div class="fx-sep"></div>
         ${fld('d.orientacion','Orientación Sexual')}${fld('d.sangre','Tipo de Sangre')}${fld('d.raza','Raza')}
         <div class="fx-sep"></div>
@@ -6360,7 +6377,7 @@ function renderCaract(){
 function refreshCalc(){
   const c=combate(), p=puntos(), A=ficha.attrs, b=s=>BONUS[sk(s)]||0;
   const box=$('#fx-combat'); if(!box) return;
-  $('#fx-etapa').textContent = ficha.d.etapa;
+  $('#fx-etapa').textContent = ficha.d.etapa || 'sin etapa: elegila en Datos';
   const row=(l,f,v)=>`<div class="fx-crow"><span class="l">${l}</span><span class="f">${f}</span><b>${v}</b></div>`;
   box.innerHTML = [
     row('Iniciativa',c.t.ini,c.ini),
@@ -6664,6 +6681,47 @@ function findArcano(name, type){
   const hits = ARCANOS.filter(a=>keys(a).includes(n));
   return hits.find(a=>a.type===type) || hits[0] || null;
 }
+/* Lee una línea de trasfondo con cualquiera de las formas habituales:
+   «Biblioteca — Medicina — Heridas mágicas III: nota», «Biblioteca Medicina IV», «Biblioteca: Medicina (IV)»,
+   «Trasfondo Biblioteca de Medicina nivel 4», «IV Biblioteca — Medicina», «Biblioteca — Medicina — Heridas mágicas: III — nota»,
+   «Informantes Bajos fondos Ladrones II» (separa categoría y específico con la lista oficial). */
+function leerTrasfondo(l){
+  const LV = '(VI|V|IV|I{1,3}|[1-6])';
+  l = String(l||'').replace(/^trasfondos?\s*(?:generales?|espec[ií]ficos?)?\s*[:—–\-]?\s*/i,'');
+  let lvPre = null;
+  const pre = l.match(new RegExp('^\\(?'+LV+'\\)?\\s*[—–\\-:.]?\\s+(?=Biblioteca|Informantes|Influencia|Seguidores)','i'));
+  if(pre){ lvPre = pre[1]; l = l.slice(pre[0].length); }
+  const m = l.match(/^(Biblioteca|Informantes|Influencia|Seguidores)\b\s*(?:—|–|-|:|·|>)?\s*(.+)$/i);
+  if(!m) return null;
+  const t = m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
+  let rest = m[2].trim(), namePart, nota = '', lv = null;
+  const ci = rest.indexOf(':');
+  namePart = ci>=0 ? rest.slice(0,ci) : rest; nota = ci>=0 ? rest.slice(ci+1).trim() : '';
+  const lvEnd = new RegExp('(?:\\s+|\\s*[—–\\-,(]\\s*)\\(?\\s*(?:nivel|niv\\.?|nv\\.?|lv\\.?)?\\s*'+LV+'\\s*\\)?\\s*\\.?\\s*$','i');
+  let x = namePart.match(lvEnd);
+  if(x && x.index>0){ lv = x[1]; namePart = namePart.slice(0, x.index); }
+  else if(nota){
+    x = nota.match(new RegExp('^\\(?\\s*(?:nivel|niv\\.?|nv\\.?|lv\\.?)?\\s*'+LV+'\\s*\\)?(?=$|[\\s.:,;—–\\-])\\s*[.:,;—–\\-]*\\s*','i'));
+    if(x){ lv = x[1]; nota = nota.slice(x[0].length).trim(); }
+  }
+  if(!lv) lv = lvPre;
+  if(!lv) return null;
+  const v = ROMAN_N[String(lv).toUpperCase()] || num(lv);
+  if(!v) return null;
+  let parts = namePart.split(/\s*(?:—|–|>|·|\/|\s-\s)\s*/).map(s=>s.replace(/^(?:de|del|de la)\s+/i,'').trim()).filter(Boolean);
+  if(!parts.length) return null;
+  const C = cats(t), CK = Object.keys(C);
+  const igual = (a,b)=>norm(a)===norm(b);
+  /* «Bajos fondos Ladrones» sin separador: se separa con la lista oficial */
+  if(parts.length===1){
+    const c = CK.filter(k=>norm(parts[0]).startsWith(norm(k)+' ')).sort((a,b)=>b.length-a.length)[0];
+    if(c){ const resto = parts[0].slice(c.length).trim().replace(/^(?:de|del)\s+/i,''); parts = [c, resto]; }
+  }
+  const c0 = CK.find(k=>igual(k,parts[0])) || parts[0];
+  let e = parts.slice(1).join(' > ');
+  if(e && C[c0]){ const e0 = C[c0].find(s=>igual(s,e)); if(e0) e = e0; }
+  return {t, c:c0, e, v, nota: nota.replace(/^[—–\-\s]+/,'').trim()};
+}
 function parseFichaForo(raw){
   const f = emptyFicha(), T = cleanForo(raw), lines = T.split('\n');
   /* 1. campos con etiqueta */
@@ -6686,7 +6744,7 @@ function parseFichaForo(raw){
     setPath(f,k,v);
   });
   const et = Object.keys(ETAPAS).find(e=>norm(f.d.etapa).includes(norm(e)));
-  if(et) f.d.etapa=et; else if(f.d.etapa) f.d.etapa='Joven';
+  f.d.etapa = et || '';
   const lim = T.match(/L[ií]mites?\s*:\s*([^)\n]*)/i); if(lim && !/^_+$/.test(lim[1].trim())) f.extra.limites=lim[1].trim();
   /* 2. atributos */
   let aStart = T.search(/Atributos\s*:/i); if(aStart<0) aStart = T.search(/Atributos/i);
@@ -6712,7 +6770,7 @@ function parseFichaForo(raw){
   }
   f.artes = arts;
   /* 4. secciones (magia y otros) */
-  let mode=null, mType=null, mTier='bas', oSec=null; const talLines=[], titLines=[], idLines=[];
+  let mode=null, mType=null, mTier='bas', oSec=null; const talLines=[], titLines=[], idLines=[], razaLines=[];
   for(const ln of lines){
     const h = up(ln), s = SECT[h];
     if(s!==undefined){
@@ -6740,6 +6798,7 @@ function parseFichaForo(raw){
       continue;
     }
     if(mode==='o'){
+      if(oSec==='raza') razaLines.push(ln);
       if(oSec==='idiomas') idLines.push(ln);
       if(oSec==='tal') talLines.push(ln);
       if(oSec==='tit' && !/^(\S )+\S$/.test(ln)) titLines.push(ln);
@@ -6752,20 +6811,14 @@ function parseFichaForo(raw){
     const nv = idMap[norm(m[2])] || m[2].charAt(0).toUpperCase()+m[2].slice(1).toLowerCase();
     if(!f.idiomas.some(x=>norm(x.n)===norm(m[1]))) f.idiomas.push({n:m[1].trim(), nivel:nv, nota:m[3].replace(/^[.:\-—\s]+/,'').trim()}); });
   /* trasfondos, ventajas, especializaciones (en toda la parte final) */
-  const oIdx = Math.max(T.search(/\nIDIOMAS\b/i), 0);
+  /* desde el primer encabezado de la parte final (IDIOMAS, TRASFONDOS, BIBLIOTECA…), sin importar el orden */
+  const heads = [/\n\s*IDIOMAS\b/i, /\n\s*TRASFONDOS?\b/i, /\n\s*BIBLIOTECA\s*\n/i, /\n\s*INFORMANTES\s*\n/i, /\n\s*INFLUENCIA\s*\n/i, /\n\s*SEGUIDORES\s*\n/i, /\n\s*VENTAJAS\b/i]
+    .map(r=>T.search(r)).filter(i=>i>=0);
+  const oIdx = heads.length ? Math.min(...heads) : 0;
   T.slice(oIdx).split('\n').forEach(l0=>{
-    const l = l0.replace(/^[✦✧•\-–→*]\s*/,'');
-    let m = l.match(/^(Biblioteca|Informantes|Influencia|Seguidores)\s*(?:—|–|-|:|·)?\s*(.+)$/i);
-    if(m){
-      const ci=m[2].indexOf(':'); let namePart = ci>=0 ? m[2].slice(0,ci) : m[2]; const nota = ci>=0 ? m[2].slice(ci+1).trim() : '';
-      const lv = namePart.match(/\s+(VI|V|IV|I{1,3}|[1-6])\s*\.?\s*$/); if(!lv) return;
-      namePart = namePart.slice(0, lv.index);
-      const parts = namePart.split(/\s*(?:—|–|>|·|\s-\s)\s*/).map(x=>x.trim()).filter(Boolean);
-      if(!parts.length) return;
-      const t = m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
-      f.bgs.push({t, c:parts[0], e:parts.slice(1).join(' > '), v: ROMAN_N[lv[1]] || num(lv[1]), nota});
-      return;
-    }
+    const l = l0.replace(/^[^A-Za-zÁÉÍÓÚáéíóúÑñ0-9]+/,'');
+    const bg = leerTrasfondo(l); if(bg){ if(!f.bgs.some(x=>x.t===bg.t&&norm(x.c)===norm(bg.c)&&norm(x.e)===norm(bg.e))) f.bgs.push(bg); return; }
+    let m;
     m = l.match(/^(Fama|Orden de Merl[ií]n|Patr[oó]n|Recursos)\s+(IV|I{1,3}|[1-4])\b/i);
     if(m){ const k = ADVS.find(a=>norm(a)===norm(m[1])); if(k) f.adv[k]=Math.max(f.adv[k], ROMAN_N[m[2]]||num(m[2])); return; }
     m = l.match(/^Orden de Merl[ií]n.*?(Primera|Segunda|Tercera)\s+clase/i);
@@ -6787,6 +6840,13 @@ function parseFichaForo(raw){
     if(n && n.length<=60) f.talentos.push({n, nota});
   });
   f.titulos = titLines.join('\n');
+  /* raza con canje (Semigigante, Semiduende, Semiveela, Metamorfomago): se toma de «Raza:» o de la sección RAZA */
+  const RAZAS_C = [['semigigant','Semigigante'],['semiduend','Semiduende'],['semiveel','Semiveela'],['metamorfomag','Metamorfomago']];
+  const razaDe = t => { const z = norm(t||'').replace(/[^a-z]/g,''); const h = RAZAS_C.find(([k])=>z.includes(k)); return h ? h[1] : null; };
+  if(!razaDe(f.d.raza)){
+    const cand = razaLines.concat(lines.filter(l=>/^\W*raza\s*:/i.test(l)).map(l=>l.replace(/^\W*raza\s*:/i,'')));
+    for(const l of cand){ const rz = razaDe(l); if(rz){ f.d.raza = rz; break; } }
+  }
   const img = String(raw).match(/<img[^>]+src="([^"]+)"/i); if(img) f.extra.foto = img[1];
   const nA=f.arcanos.length, nB=f.bgs.length;
   return {ficha:f, resumen:`${nA} arcano${nA!==1?'s':''}, ${nB} trasfondo${nB!==1?'s':''}, ${f.idiomas.length} idioma${f.idiomas.length!==1?'s':''}`};
@@ -7301,11 +7361,12 @@ function renderControl(){
   const box = $('#ctrl-body'); if(!box) return;
   const c = combate(), p = puntos(), M = c.M, P = plantillaDe(ficha);
   const chip = (on,l) => on ? `<span class="ct-chip">${esc(l)}</span>` : '';
-  const det = [chip(true,`Etapa: ${ficha.d.etapa||'—'}`), chip(true,`Raza: ${ficha.d.raza||'Humana'}`),
-    chip(M.semiD,'Semiduende: Vigor ÷ 2 para PAs y Umbral'), chip(M.semiG,'Semigigante: +2 Ataque Físico, Vigor × 3 en PAs'),
+  const det = [chip(true,`Etapa: ${ficha.d.etapa||'sin etapa'}`), chip(true,`Raza: ${ficha.d.raza||'Humana'}`),
+    chip(M.semiD,'Semiduende: Vigor ÷ 2 para PAs y Umbral'), chip(M.semiG,'Semigigante: +2 en tiradas de Vigor (incluido Ataque Físico), cada punto de Vigor da 3 PAs, no puede ser Derrotado aunque tenga PAs bajo 0'),
     chip(M.carstein,'Anillo de los Carstein'), chip(M.warlockObj,'Armadura de Warlock'), chip(M.maletin,'Maletín del pocionista inquieto'),
     chip(M.herbiObj,'Herbivicus'), chip(M.herbicida,'Poción herbicida'), chip(M.vitae,'Planta Vitae'), chip(M.bisu,'Bisutería Arcana'),
     chip(M.solucion,'Solución del ritualista'), chip(M.altar,'Altar del ritualista')].join('');
+  const semiNota = M.semiG ? `<div class="ct-sum ok" style="margin-top:10px"><b>Semigigante.</b> Se aplican sus reglas: +2 a todas las tiradas de Vigor (el Ataque Físico ya lo incluye), cada punto de Vigor suma 3 PAs en vez de 1 y no puede ser Derrotado con arcanos como el Desmaius aunque sus PAs estén bajo cero. Recordá que la ficha tiene que tener el canje <b>Semigigante</b> (500 gr), obligatorio y exclusivo de esta raza.</div>` : '';
   const toggles = (M.warlockObj ? `<label class="ct-tg"><input type="checkbox" id="ct-warlock" ${combOpt.warlock?'checked':''}> La Armadura de Warlock está puesta (−2 Iniciativa y Defensa)</label>` : '')
     + (M.herbiObj ? `<label class="ct-tg"><input type="checkbox" id="ct-herbi" ${combOpt.herbivicus===false?'':'checked'}> Herbivicus activo (suma tu nivel de Herbología a Pociones)</label>` : '');
   const E = esperados();
@@ -7319,18 +7380,18 @@ function renderControl(){
   const fuente = P.codigo ? `<p class="small muted">Se revisa el código guardado en <b>Código para el foro</b>. Si querés revisar otra versión, pegala abajo.</p>` : `<p class="small muted">Pegá tu ficha (el código de «Editar» o el texto copiado de la ficha publicada).</p>`;
   let res = '';
   if(ctrlRes){
-    const bad = ctrlRes.filter(r=>r.st==='mal').length, miss = ctrlRes.filter(r=>r.st==='falta').length;
-    res = `<div class="ct-sum ${bad?'bad':'ok'}">${bad ? `${bad} stat${bad>1?'s':''} no coincide${bad>1?'n':''} con lo que debería tener tu ficha.` : 'Todo bien: los stats escritos coinciden con los de tu ficha.'}${miss?` ${miss} no los encontré escritos.`:''}</div>
+    const bad = ctrlRes.filter(r=>r.st==='mal').length, miss = ctrlRes.filter(r=>r.st==='falta').length, sinEt = ctrlRes.some(r=>r.st==='etapa');
+    res = `<div class="ct-sum ${bad?'bad':'ok'}">${bad ? `${bad} stat${bad>1?'s':''} no coincide${bad>1?'n':''} con lo que debería tener tu ficha.` : 'Todo bien: los stats escritos coinciden con los de tu ficha.'}${miss?` ${miss} no los encontré escritos.`:''}${sinEt?' PAs, Umbral y Heridas dependen de la etapa: elegila en Mi Ficha › Datos para chequearlos.':''}</div>
       <div class="tablewrap"><table class="req ct-table"><thead><tr><th class="l">Stat</th><th>En tu ficha</th><th>Debería ser</th><th></th><th class="l">Cómo se calcula</th></tr></thead><tbody>
-      ${ctrlRes.map(r=>`<tr class="${r.st}"><td class="l"><b>${r.l}</b></td><td>${r.st==='falta'?'—':esc(r.w)}</td><td><b>${r.e}</b>${r.x!==undefined && !Number.isInteger(r.x)?`<div class="muted small">exacto: ${r.x.toFixed(2).replace('.',',')}</div>`:''}</td>
-        <td>${r.st==='ok'?'<span class="badge r3">✓ Bien</span>':r.st==='redondeo'?'<span class="badge r2">≈ Redondeo</span>':r.st==='falta'?'<span class="badge">No está</span>':'<span class="badge r0">✗ Revisar</span>'}</td>
+      ${ctrlRes.map(r=>`<tr class="${r.st}"><td class="l"><b>${r.l}</b></td><td>${r.st==='falta'?'—':esc(r.w)}</td><td><b>${r.st==='etapa'?'?':r.e}</b>${r.x!==undefined && !Number.isInteger(r.x)?`<div class="muted small">exacto: ${r.x.toFixed(2).replace('.',',')}</div>`:''}</td>
+        <td>${r.st==='ok'?'<span class="badge r3">✓ Bien</span>':r.st==='redondeo'?'<span class="badge r2">≈ Redondeo</span>':r.st==='falta'?'<span class="badge">No está</span>':r.st==='etapa'?'<span class="badge r2">Falta la etapa</span>':'<span class="badge r0">✗ Revisar</span>'}</td>
         <td class="l small">${esc(r.f)}</td></tr>`).join('')}</tbody></table></div>
       ${bad && P.codigo && P.modo==='personal' ? `<div class="row" style="margin-top:10px"><button class="btn sm primary" id="ct-fix">Corregirlos en «Código para el foro»</button><span class="muted small">Se reescriben esas líneas con los valores correctos en tu código.</span></div>` : ''}
       ${bad && P.modo!=='personal' ? `<p class="small muted">Si usás el modelo Compacto o Extendido de «Código para el foro», el código ya sale con los valores correctos.</p>` : ''}`;
   }
   box.innerHTML = `<div class="card"><h2>Lo que tiene en cuenta</h2>
       <p class="muted small" style="margin-top:-4px">Sale de la ficha de <b>${esc(ficha.nombre||'tu personaje')}</b>: atributos, habilidades, etapa, raza y arcanos (pestaña Magia).</p>
-      <div class="ct-chips">${det}</div>${toggles?`<div class="ct-tgs">${toggles}</div>`:''}</div>
+      <div class="ct-chips">${det}${semiNota}</div>${toggles?`<div class="ct-tgs">${toggles}</div>`:''}</div>
     <div class="card"><h2>Stats que debería tener la ficha</h2><div class="ct-grid">${STATS_CTRL.map(([k,l])=>tile(k,l)).join('')}</div></div>
     <div class="card"><div class="row"><h2 style="margin:0">Chequeo de stats</h2><span class="spacer"></span><button class="btn primary" id="ct-run">Chequear stats</button></div>
       ${fuente}<textarea id="ct-in" rows="4" placeholder="(opcional) Pegá acá la ficha a revisar…">${esc(ctrlTxt)}</textarea>${res}</div>
@@ -7360,6 +7421,7 @@ function runCheck(){
     const w = W[k], e = E[k], x = E._x[k];
     let st;
     if(!w.found || w.val===null) st = 'falta';
+    else if(etapaOf().none && ['pa','umbral','heridas'].includes(k)) st = 'etapa';
     else if(w.val===e) st = 'ok';
     else if(x!==undefined && (w.val===Math.floor(x) || w.val===Math.ceil(x))) st = 'redondeo';
     else st = 'mal';
@@ -8501,10 +8563,13 @@ initDb();
   const mainNav = document.getElementById("mainNav"), subNav = document.getElementById("subNav");
   let navOpen = null;
   function pintarNav(cur){
-    const g = grupoDe(cur);
-    mainNav.innerHTML = GRUPOS.map(G=>`<div class="nav-grp${navOpen===G.id?" open":""}"><button class="nav-g${g&&g.id===G.id?" active":""}" data-navg="${G.id}" aria-expanded="${navOpen===G.id}"><span class="ng-l">${escH(G.nombre)}</span><span class="ng-s">${escH(G.corto||G.nombre)}</span> <span class="car">▾</span></button>`+
-      `<div class="nav-menu"${navOpen===G.id?"":" hidden"}>${G.items.map(it=>`<button data-go="${it[0]}" class="${it[0]===cur?"active":""}"><span class="nm-g">${it[2]}</span>${escH(it[1])}</button>`).join("")}</div></div>`).join("");
-    subNav.innerHTML = g && g.items.length>1 ? `<span class="sn-lbl">${escH(g.nombre)}</span>`+g.items.map(it=>`<button data-go="${it[0]}" class="${it[0]===cur?"active":""}" ${it[0]===cur?'aria-current="page"':""}>${escH(it[1])}</button>`).join("") : "";
+    const g = grupoDe(cur), it = g && g.items.find(x=>x[0]===cur);
+    const open = navOpen==="all";
+    mainNav.innerHTML = `<div class="nav-grp${open?" open":""}"><button class="nav-g nav-all${g?" active":""}" data-navg="all" aria-expanded="${open}" aria-haspopup="true">`+
+      `<span class="nav-ham" aria-hidden="true">☰</span><span class="nav-cur">${it?`<span class="nc-g">${escH(g.nombre)} ·</span> ${escH(it[1])}`:"Secciones"}</span><span class="car">${open?"▴":"▾"}</span></button>`+
+      `<div class="nav-menu nav-mega"${open?"":" hidden"}>${GRUPOS.map(G=>`<div class="nm-col"><div class="nm-h"><span>${G.glyph}</span> ${escH(G.nombre)}</div>`+
+        G.items.map(x=>`<button data-go="${x[0]}" class="${x[0]===cur?"active":""}"><span class="nm-g">${x[2]}</span>${escH(x[1])}</button>`).join("")+`</div>`).join("")}</div></div>`;
+    subNav.innerHTML = g && g.items.length>1 ? `<span class="sn-lbl">${escH(g.nombre)}</span>`+g.items.map(x=>`<button data-go="${x[0]}" class="${x[0]===cur?"active":""}" ${x[0]===cur?'aria-current="page"':""}>${escH(x[1])}</button>`).join("") : "";
     subNav.hidden = !subNav.innerHTML;
   }
   mainNav.addEventListener("click", e=>{
