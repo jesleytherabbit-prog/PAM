@@ -1282,6 +1282,8 @@ body[data-sec="home"] .topbar .mainnav{visibility:hidden;}
         <button class="btn sm" id="f-push">Llevar a la calculadora</button>
         <button class="btn sm ghost" id="f-export">Exportar código</button>
         <button class="btn sm ghost" id="f-import">Importar código</button>
+        <button class="btn sm ghost" id="f-lector-txt">Cargar .txt del Lector</button>
+        <input type="file" id="f-lector-file" accept=".txt,.json,text/plain,application/json" hidden>
         <button class="btn sm ghost" id="f-example">Ejemplo: Hana Park</button>
         <button class="btn sm ghost danger" id="f-reset">Vaciar</button>
       </div>
@@ -6644,11 +6646,13 @@ $('#f-example').onclick=()=>{ if(!confirmReplace()) return; const js=ficha.jobSt
 $('#f-reset').onclick=()=>{ if(!confirmReplace()) return; ficha=emptyFicha(); persist(); renderFicha(); };
 function confirmReplace(){ const has = ficha.nombre || ficha.bgs.length || ficha.arcanos.length; return !has || window.confirm('Esto reemplaza la ficha que tienes cargada. ¿Seguir?'); }
 $('#f-export').onclick=()=>{ const c=Object.assign({},ficha); delete c._mgUi; openDlg('Código de tu ficha','Guárdalo o pásalo: con "Importar código" se recupera la ficha en cualquier navegador.',encode(c),null); };
-$('#f-import').onclick=()=>openDlg('Importar código','Pega el código de una ficha exportada desde esta página.','',txt=>{
+$('#f-import').onclick=()=>openDlg('Importar código','Pega el código de una ficha exportada desde esta página, o el código del Lector de Fichas (AVK1… o AK…).','',txt=>{
+  if(esCodigoLector(txt)){ importarCodigoLector(txt); return; }
   ficha=normFicha(decode(txt)); persist(); renderFicha(); toast('Ficha importada');
 },'Importar');
 $('#f-parse').onclick=()=>openDlg('Importar ficha del foro','Abrí tu ficha en el foro, entrá a «Editar», copiá TODO el contenido del mensaje (Ctrl+A, Ctrl+C) y pegalo acá. También sirve el texto copiado de la ficha publicada. Se reemplaza la ficha que tengas cargada.','',txt=>{
   if(!txt.trim()) throw new Error('vacío');
+  if(esCodigoLector(txt)){ importarCodigoLector(txt); return; }
   const p=parseFichaForo(txt); const js=ficha.jobState;
   ficha=normFicha(p.ficha); ficha.jobState=js||{};
   if(esCodigoForo(txt)) guardarPlantilla(txt, ficha);
@@ -6656,6 +6660,144 @@ $('#f-parse').onclick=()=>openDlg('Importar ficha del foro','Abrí tu ficha en e
   toast(`Ficha importada: ${p.resumen}${esCodigoForo(txt)?' · tu código quedó guardado en «Código para el foro»':''}`);
 },'Importar');
 $('#f-bb').onclick=()=>{ fichaTab='codigo'; try{ localStorage.setItem('grimorio.fichaTab',fichaTab); }catch(e){} renderFicha(); };
+
+/* ============ Código del Lector de Fichas (AVK1… / AK…) → Mi Ficha ============ */
+const LECTOR_FB = { key:'AIzaSyCzTfW6c4OltResFNP6FJ5-MV36Bz7iI74', proyecto:'trackerdefichas' };
+const esCodigoLector = t => { const s=String(t||'').trim(); return /^AVK[01]\./.test(s) || /^AK\d{5}$/.test(s.toUpperCase().replace(/[^A-Z0-9]/g,'')); };
+async function leerCodigoLector(t){
+  t = String(t||'').trim();
+  const corto = t.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(/^AK\d{5}$/.test(corto)){
+    const r = await fetch(`https://firestore.googleapis.com/v1/projects/${LECTOR_FB.proyecto}/databases/(default)/documents/fichas/${corto}?key=${LECTOR_FB.key}`);
+    if(r.status===404) throw new Error('No hay ninguna ficha con el código '+corto);
+    if(!r.ok) throw new Error('Firebase respondió '+r.status);
+    t = (await r.json()).fields.ficha.stringValue;
+  }
+  const [pre, cuerpo] = t.split('.');
+  const bytes = Uint8Array.from(atob(cuerpo.replace(/-/g,'+').replace(/_/g,'/')), c=>c.charCodeAt(0));
+  if(pre==='AVK0') return JSON.parse(new TextDecoder().decode(bytes));
+  const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+  const d = JSON.parse(new TextDecoder().decode(buf));
+  return Array.isArray(d) ? d[0] : d;
+}
+/* Traduce el JSON del Lector al formato de Mi Ficha */
+function fichaDesdeLector(L){
+  const f = emptyFicha(), N = s => norm(s).replace(/[^a-z0-9]/g,'');
+  const buscar = (lista, k) => lista.find(x => N(x) === N(k));
+  const RANGO = {0:0,1:1,2:2,4:3,7:4,9:5};
+  const rango = b => RANGO[b] ?? (b>=9?5:b>=7?4:b>=4?3:b>=2?2:b>=1?1:0);
+  f.nombre = L.personaje || '';
+  /* datos */
+  const D = L.datos || {};
+  const DMAP = {avatar:'avatar', multicuenta:'multicuenta', lugar_nacimiento:'nacimiento', residencia:'residencia', clase_social:'clase', fecha_nacimiento:'fechaNac',
+    edad:'edad', orientacion:'orientacion', sangre:'sangre', casa:'casa', curso:'curso', faccion:'faccion', quidditch:'quidditch'};
+  Object.entries(DMAP).forEach(([k,v]) => { if(D[k]) f.d[v] = D[k]; });
+  f.d.etapa = Object.keys(ETAPAS).find(e => norm(D.etapa||'').includes(norm(e))) || '';
+  if(L.raza && L.raza.nombre) f.d.raza = L.raza.nombre;
+  const T = L.textos || {};
+  if(T.descripcion_fisica) f.desc.fisica = T.descripcion_fisica;
+  if(T.descripcion_psicologica) f.desc.psico = T.descripcion_psicologica;
+  if(T.historia) f.desc.historia = T.historia;
+  if(T.familia) f.desc.familia = T.familia;
+  if(D.punto_fuerte) f.desc.fuerte = D.punto_fuerte;
+  if(D.punto_debil) f.desc.debil = D.punto_debil;
+  if(D.gustos) f.desc.gustos = D.gustos;
+  if(D.fobias) f.desc.fobias = D.fobias;
+  if(D.mascota) f.desc.mascota = D.mascota;
+  if(D.empleo) f.extra.ocupacion = D.empleo;
+  if(L.limites) f.extra.limites = L.limites;
+  const P = L.puntos || {};
+  if(Number.isFinite(P.destino)) f.extra.pd = P.destino;
+  if(P.perdida_destino != null) f.extra.pdPerdida = String(P.perdida_destino);
+  /* atributos y habilidades */
+  Object.entries(L.atributos || {}).forEach(([k,v]) => { const a = buscar(ATTRS,k); if(a) f.attrs[a] = v; });
+  Object.values(L.habilidades || {}).forEach(grupo => Object.entries(grupo).forEach(([k,h]) => {
+    if(h.bono == null) return;
+    const art = (h.nombre||'').match(/Arte\s*\/\s*Artesan[ií]a\s*\(([^)]+)\)/i);
+    if(art || /^artesania_/.test(k)){ { const n = art ? art[1].trim() : k.replace(/^artesania_/,'').replace(/_/g,' '); f.artes.push({n: n.charAt(0).toUpperCase()+n.slice(1), v: rango(h.bono)}); } return; }
+    const s = buscar(ALL_SKILLS.filter(x=>x!==ART), h.nombre||k) || buscar(ALL_SKILLS.filter(x=>x!==ART), k);
+    if(s) f.skills[s] = rango(h.bono);
+  }));
+  /* arcanos */
+  const TIER = {domesticos:'dom', basicos:'bas', intermedios:'int', avanzados:'ava', legendarios:'leg'};
+  const nota = x => [x.detalle, x.descripcion].filter(Boolean).join(' — ');
+  const agregar = (type, tier, x) => {
+    const name = x.nombre || ''; if(!name) return;
+    const hit = typeof findArcano==='function' ? findArcano(name, type) : null;
+    const nm = hit ? hit.calcName : name;
+    if(f.arcanos.some(a => norm(a.name)===norm(nm))) return;
+    f.arcanos.push({type: tier==='' && type==='objeto' ? 'especial' : type, tier: hit && tier!=='' ? hit.tier : tier, name: nm, nota: hit ? '' : nota(x)});
+  };
+  [['hechizos','hechizo'],['pociones','pocion'],['rituales','ritual'],['objetos','objeto'],['quidditch','quidditch']].forEach(([k,type]) =>
+    Object.entries(L[k] || {}).forEach(([sub, lista]) => (lista||[]).forEach(x => agregar(type, TIER[sub] ?? (type==='objeto' ? '' : 'bas'), x))));
+  (L.armas || []).forEach(x => agregar('objeto', '', x));
+  /* trasfondos (solo generales), ventajas, especializaciones */
+  (L.trasfondos || []).forEach(t => {
+    if(!t.tipo || !t.general) return;
+    f.bgs.push({t: t.tipo, c: t.general, e: t.especifica || '', v: t.nivel || 1, nota: [t.identidad ? 'Identidad alternativa: '+t.identidad : '', t.descripcion || ''].filter(Boolean).join(' — ')});
+  });
+  (L.ventajas || []).forEach(v => { const a = buscar(ADVS, v.nombre||''); if(!a) return;
+    const n = typeof v.nivel==='number' ? v.nivel : (/1|primera/i.test(v.nivel) ? 3 : /2|segunda/i.test(v.nivel) ? 2 : /3|tercera/i.test(v.nivel) ? 1 : num(v.nivel));
+    f.adv[a] = Math.max(f.adv[a]||0, n); });
+  Object.entries(L.especializaciones || {}).forEach(([k,v]) => { const r = buscar(ESP_RAMAS, k.replace(/_/g,' ')); if(r) f.esp[r] = v; });
+  /* idiomas */
+  const NIV = {nativo:'Nativo', natal:'Nativo', alto:'Alto', fluido:'Alto', avanzado:'Alto', medio:'Medio', intermedio:'Medio', bajo:'Bajo', basico:'Bajo'};
+  (L.idiomas || []).forEach(x => { if(x.idioma) f.idiomas.push({n: x.idioma, nivel: NIV[norm(x.nivel||'')] || 'Bajo', nota: x.descripcion || ''}); });
+  /* talentos y lazos */
+  Object.values(L.talentos || {}).flat().forEach(x => {
+    const n = x.nombre || ''; const tipo = VINC.find(v => norm(v)===norm(n));
+    if(tipo) f.vinculos.push({tipo, pj: x.detalle || '', nota: x.descripcion || ''});
+    else if(n) f.talentos.push({n, nota: x.detalle || ''});
+  });
+  /* títulos y proezas */
+  f.titulos = (L.titulos || []).map(t => [t.examen, t.materia].filter(Boolean).join(' ') + (t.calificacion ? ': ' + t.calificacion : '')).join('\n');
+  if((L.proezas || []).length) f.otros = 'Proezas: ' + L.proezas.map(p => p.habilidad).join(', ');
+  return f;
+}
+/* .txt o .json del Lector: un código suelto, o la lista que descarga «Escanear todas» */
+function codigosDeArchivo(texto){
+  const t = String(texto||'').trim();
+  if(t.startsWith('{')){ try{ const j = JSON.parse(t); return (j.fichas||[]).filter(x=>x.codigo).map(x=>({n:x.personaje||'Sin nombre', c:x.codigo_completo||x.codigo})); }catch(e){} }
+  const filas = [];
+  t.split(/\r?\n/).forEach(l => {
+    const cods = l.match(/AVK[01]\.[A-Za-z0-9_-]+/g);
+    if(!cods) return;
+    const nombre = l.split('\t')[0].trim();
+    filas.push({n: /^AVK/.test(nombre) ? 'Ficha '+(filas.length+1) : nombre, c: cods[cods.length-1]});   // si hay dos, el último es el completo
+  });
+  return filas;
+}
+$('#f-lector-txt').onclick = () => { const i = $('#f-lector-file'); i.value = ''; i.click(); };
+$('#f-lector-file').onchange = async e => {
+  const file = e.target.files && e.target.files[0]; if(!file) return;
+  const lista = codigosDeArchivo(await file.text());
+  if(!lista.length){ toast('Ese archivo no tiene códigos del Lector'); return; }
+  let elegido = lista[0];
+  if(lista.length > 1){
+    const q = window.prompt(`El archivo tiene ${lista.length} fichas. Escribí el nombre (o parte) del personaje:`, ficha.nombre || '');
+    if(q == null) return;
+    const hits = lista.filter(x => norm(x.n).includes(norm(q)));
+    if(!hits.length){ toast('No encontré a «'+q+'» en el archivo'); return; }
+    if(hits.length > 1){
+      const idx = window.prompt('Hay varios:\n' + hits.slice(0,20).map((x,i)=>`${i+1}. ${x.n}`).join('\n') + '\n\nEscribí el número:', '1');
+      elegido = hits[num(idx)-1]; if(!elegido) return;
+    } else elegido = hits[0];
+  }
+  if(!confirmReplace()) return;
+  importarCodigoLector(elegido.c);
+};
+async function importarCodigoLector(txt){
+  toast('Cargando ficha…');
+  try{
+    const L = await leerCodigoLector(txt);
+    if(!L || typeof L!=='object') throw new Error('El código no trae una ficha');
+    const js = ficha.jobState, plant = ficha.plantilla;
+    ficha = normFicha(fichaDesdeLector(L)); ficha.jobState = js || {}; if(plant) ficha.plantilla = plant;
+    persist(); fichaTab = 'datos'; renderFicha();
+    const sinTextos = !L.textos;
+    toast(`Ficha de ${ficha.nombre || 'sin nombre'} cargada: ${ficha.arcanos.length} arcanos, ${ficha.bgs.length} trasfondos${sinTextos ? ' · era el código de juego: usá el código completo para traer descripciones e historia' : ''}`);
+  }catch(e){ console.error(e); toast('No se pudo cargar: ' + (e.message || e)); }
+}
 
 /* ============ Panel: Editor ============ */
 function curEdit(){ let j=jobs.find(x=>x.id===ui.edit); if(!j){ j=jobs[0]; ui.edit=j?j.id:null; } return j; }
