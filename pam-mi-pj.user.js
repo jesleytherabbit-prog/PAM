@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PAM · Mi PJ (HP Avada Kedavra)
 // @namespace    https://jesleytherabbit-prog.github.io/PAM/
-// @version      1.3.0
+// @version      1.4.0
 // @description  Tus grageas, tu ficha, tu bóveda, tus roles y tu sueldo del mes; revisa la bóveda antes de publicar, manda todo a PAM y lleva tus canjes de punta a punta. Nada se publica ni se edita sin que vos lo aceptes.
 // @author       Hana Park
 // @match        https://hp-avada-kedavra.foroactivo.com/*
@@ -81,7 +81,7 @@ function crearCanjes(PUENTE) {
     'ne5ZhyC': 'Ficha correcta'
   };
 
-  var VERSION = 'mipj-1.3.0';
+  var VERSION = 'mipj-1.4.0';
   var PAM_URL = 'https://jesleytherabbit-prog.github.io/PAM/';
   var CLAVE_PAQUETE = 'pam.paquete';
   var CLAVE_PETICION = 'pam.peticion';     // peticion capturada en PAM, pendiente de publicar
@@ -2639,6 +2639,122 @@ function moduloMiPJ(ESC, PUENTE) {
   }
 
 
+
+  /* ---------------- acceso rápido: atributos, habilidades y combate para tirar ---------------- */
+  /* Tirada de habilidad = 1d10 + Atributo + bono de la Habilidad. Valor pasivo = 5 + Atributo + bono. */
+  const ATRS = ['Vigor', 'Destreza', 'Carisma', 'Voluntad', 'Percepción', 'Inteligencia', 'Poder'];
+  const HAB_DE = {
+    Vigor: ['Atletismo', 'Pelea'], Destreza: ['Esquiva', 'Latrocinio', 'Sigilo', 'Vuelo'],
+    Carisma: ['Coordinación', 'Intimidación', 'Oratoria', 'Seducción', 'Subterfugio'], Voluntad: ['Estilo', 'Frialdad'],
+    Percepción: ['Alerta', 'Consciencia', 'Empatía', 'Iniciativa', 'Investigación'],
+    Inteligencia: ['Adivinación', 'Arcanismo', 'Callejeo', 'Cultura Mágica', 'Cultura Muggle', 'Herbología', 'Magizoología', 'Medicina', 'Política', 'Supervivencia'],
+    Poder: ['Duelo', 'Pociones', 'Rituales']
+  };
+  const NIVELES = ['desentrenado', 'novato', 'competente', 'experto', 'maestro', 'legendario'], BONO = [0, 1, 2, 4, 7, 9];
+  const NIVEL_TXT = ['Desentrenado', 'Novato', 'Competente', 'Experto', 'Maestro', 'Legendario'];
+  const COMBATE = [['Iniciativa', 'Iniciativa'], ['Ataque Físico', 'Ataque F.'], ['Ataque Mágico', 'Ataque M.'], ['Defensa', 'Defensa'],
+    ['Lucha Física', 'Lucha F.'], ['Lucha Mágica', 'Lucha M.'], ['PAs', 'PAs'], ['Umbral de heridas', 'Umbral'], ['Heridas', 'Heridas']];
+  const DIFICULTADES = [['Rutinaria', 5], ['Fácil', 7], ['Moderada', 9], ['Complicada', 12], ['Difícil', 15], ['Heroica', 18], ['Épica', 21], ['Imposible', 25]];
+  /* el código de la ficha (BBCode + HTML) pasado a líneas de texto */
+  function lineasFicha(codigo) {
+    const html = String(codigo || '').replace(/\[(?:br|hr)\]/gi, '<br>').replace(/\[\/?(?:list|\*|quote|spoiler|center|tr|td|table)[^\]]*\]/gi, '<br>').replace(/\[\/?[a-z*][^\]]*\]/gi, '');
+    const d = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+    d.querySelectorAll('style,script').forEach(e => e.remove());
+    return textoDe(d.body).split('\n').map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  }
+  let rapidoCache = { k: null, v: null };
+  function leerRapido(codigo) {
+    if (rapidoCache.k === codigo) return rapidoCache.v;
+    const L = lineasFicha(codigo), sinS = t => norm(t);
+    const attrs = {}, skills = {}, artes = [], combate = {}, puntos = {}, trasf = [];
+    const NIV = '(desentrenad[oa]|novat[oa]|competente|expert[oa]|maestr[oa]|legendari[oa])';
+    const todasHab = Object.values(HAB_DE).flat();
+    let enTrasf = false, enHab = false, raza = '';
+    L.forEach(l => {
+      const lim = l.replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/, '');
+      const n = sinS(lim);
+      /* secciones */
+      if (/^trasfondos\b/.test(n)) { enTrasf = true; return; }
+      if (/^(ventajas|especializaciones|talentos|titulos|idiomas|raza)\b/.test(n)) enTrasf = false;
+      if (/^habilidades\b/.test(n)) enHab = true; else if (/^(combate|puntos de|magia|hechizos)\b/.test(n)) enHab = false;
+      const mr = lim.match(/^Raza\s*:\s*(.+)$/i); if (mr && !raza) raza = mr[1].trim();
+      if (enTrasf) { const mt = lim.match(/^(.+?)\s+(I{1,3}|IV|V)\b\s*(?::\s*(.*))?$/); if (mt) trasf.push({ t: mt[1].replace(/\s*[—–-]\s*/g, ' › '), v: mt[2], nota: (mt[3] || '').trim(), esp: mt[1].split(/\s*[—–-]\s*/).length > 2 }); return; }
+      /* atributos: «Vigor: +2» */
+      const ma = lim.match(/^(Vigor|Destreza|Carisma|Voluntad|Percepci[oó]n|Inteligencia|Poder)\s*:\s*\+?\s*(\d+)\s*$/i);
+      if (ma) { const k = ATRS.find(a => sinS(a) === sinS(ma[1])); if (k && attrs[k] == null) attrs[k] = +ma[2]; return; }
+      /* combate y puntos: «… = 4» */
+      const mc = lim.match(/^([^:]{2,30}?)\s*:\s*(.*=\s*(-?\d+)|\s*(-?\d+)\s*)$/);
+      if (mc) {
+        const k = COMBATE.find(([c]) => sinS(c) === sinS(mc[1]));
+        const v = +(mc[3] != null ? mc[3] : mc[4]);
+        if (k && mc[3] != null && combate[k[0]] == null) { combate[k[0]] = v; return; }
+        const mp = sinS(mc[1]).match(/^puntos de (pociones|rituales|destino)$/);
+        if (mp && puntos[mp[1]] == null) { puntos[mp[1]] = v; return; }
+      }
+      /* habilidades y artes: «Alerta: Competente (+2)» */
+      const mh = lim.match(new RegExp('^(.+?)\\s*:\\s*' + NIV + '\\b', 'i'));
+      if (mh) {
+        const nv = NIVELES.findIndex(x => sinS(mh[2]).startsWith(x.slice(0, 6)));
+        const k = todasHab.find(h => sinS(h) === sinS(mh[1]));
+        if (k) { if (skills[k] == null) skills[k] = nv; }
+        else if (enHab && !/^(arte|artesania)/.test(sinS(mh[1])) && !ATRS.some(a => sinS(a) === sinS(mh[1]))) artes.push({ n: mh[1].trim(), nv });
+      }
+    });
+    const v = { attrs, skills, artes, combate, puntos, trasf, raza, semiG: /semigigant/.test(sinS(raza)), ok: Object.keys(attrs).length >= 4 };
+    rapidoCache = { k: codigo, v };
+    return v;
+  }
+  function vistaRapida() {
+    const F = datos && datos.ficha, cod = F && F.codigo;
+    let h = '<div class="rapido">';
+    if (!cod) return h + '<div class="card"><div class="dim">No tengo el código de tu ficha. Tocá «Actualizar».</div></div></div>';
+    const R = leerRapido(cod);
+    if (!R.ok) return h + '<div class="card"><div class="dim">No encontré los atributos en tu ficha. ¿Usa el modelo del foro («→ Vigor: +2», «→ Alerta: Competente (+2)»)?</div></div></div>';
+    h += `<input class="rq" type="search" placeholder="Buscar habilidad… (ej. alerta)" aria-label="Buscar habilidad" value="${esc(ui.rapidoQ || '')}">`;
+    /* combate */
+    const C = COMBATE.filter(([k]) => R.combate[k] != null);
+    if (C.length) h += `<div class="card r-sec" data-s="combate"><div class="ct">⚔ Combate</div><div class="rgrid">${C.map(([k, c]) => `<div class="rst" data-copiar="${esc(k)}: ${R.combate[k]}"><b>${R.combate[k]}</b><small>${esc(c)}</small></div>`).join('')}</div></div>`;
+    /* atributos */
+    h += `<div class="card r-sec" data-s="atributos"><div class="ct">✦ Atributos</div><div class="rgrid a">${ATRS.map(a => `<div class="rst" data-copiar="${esc(a)}: ${R.attrs[a] != null ? R.attrs[a] : '—'}"><b>${R.attrs[a] != null ? R.attrs[a] : '—'}</b><small title="${esc(a)}">${esc(a.slice(0, 3))}</small></div>`).join('')}</div></div>`;
+    /* habilidades: tirada y pasivo ya sumados */
+    h += `<div class="card r-sec" data-s="habilidades"><div class="ct">❖ Habilidades<span class="sp"></span><span class="rleg">tirada · pasivo</span></div>`;
+    ATRS.forEach(a => {
+      const av = R.attrs[a] || 0;
+      const filas = HAB_DE[a].map(s => ({ s, nv: R.skills[s] })).concat(a === 'Voluntad' ? R.artes.map(x => ({ s: x.n, nv: x.nv, arte: true })) : []);
+      h += `<div class="rgrp">${esc(a)} <span>${av}</span></div>`;
+      filas.forEach(({ s, nv, arte }) => {
+        const b = nv != null ? BONO[nv] : 0, extra = R.semiG && a === 'Vigor' ? 2 : 0, tot = av + b + extra;
+        const txt = `${s}: ${a} (${av}) + ${s} (${b})${extra ? ' + 2 (Semigigante)' : ''} = ${tot}`;
+        h += `<div class="rrow${nv ? '' : ' cero'}" data-q="${esc(norm(s + ' ' + a))}" data-copiar="${esc(txt)}" title="${esc(txt)} · tocá para copiar">
+          <span class="rn">${esc(s)}${arte ? ' <i>arte</i>' : ''}</span><span class="rl">${nv != null ? NIVEL_TXT[nv] : '—'}</span><b>+${tot}</b><span class="rp">${5 + tot}</span></div>`;
+      });
+    });
+    h += `${R.semiG ? '<div class="dim" style="margin-top:6px">Semigigante: ya suma +2 a las tiradas de Vigor.</div>' : ''}</div>`;
+    /* puntos y trasfondos */
+    const P = [['pociones', 'Pociones'], ['rituales', 'Rituales'], ['destino', 'Destino']].filter(([k]) => R.puntos[k] != null);
+    if (P.length) h += `<div class="card r-sec" data-s="puntos"><div class="ct">⚗ Puntos</div><div class="rgrid p">${P.map(([k, c]) => `<div class="rst" data-copiar="Puntos de ${c}: ${R.puntos[k]}"><b>${R.puntos[k]}</b><small>${c}</small></div>`).join('')}</div></div>`;
+    if (R.trasf.length) h += `<div class="card r-sec" data-s="trasfondos"><div class="ct">☾ Trasfondos</div>${R.trasf.map(t => `<div class="rrow${t.esp ? ' esp' : ''}" data-q="${esc(norm(t.t))}" data-copiar="${esc(t.t.replace(/ › /g, ' — ') + ' ' + t.v)}" title="${esc(t.nota)}"><span class="rn">${esc(t.t)}</span><b>${t.v}</b></div>`).join('')}</div>`;
+    /* dificultades */
+    h += `<div class="card r-sec" data-s="dificultades"><div class="ct">⚖ Dificultades</div><div class="rdif">${DIFICULTADES.map(([n, v]) => `<span><b>${v}</b> ${n}</span>`).join('')}</div>
+      <div class="dim" style="margin-top:6px">Tirada = 1d10 + lo que dice cada habilidad. Pasivo = 5 + atributo + habilidad (la dificultad cuando te tiran a vos sin que te des cuenta). Tocá cualquier número para copiarlo con su cuenta.</div></div>`;
+    return h + '</div>';
+  }
+  function filtrarRapido(q) {
+    const t = norm(q);
+    root.querySelectorAll('.rapido .rrow[data-q]').forEach(r => { r.hidden = !!t && !r.dataset.q.includes(t); });
+    root.querySelectorAll('.rapido .rgrp').forEach(g => {
+      let n = g.nextElementSibling, alguno = false;
+      while (n && n.classList.contains('rrow')) { if (!n.hidden) alguno = true; n = n.nextElementSibling; }
+      g.hidden = !!t && !alguno;
+    });
+    root.querySelectorAll('.rapido .r-sec').forEach(c => { if (!['habilidades', 'trasfondos'].includes(c.dataset.s)) c.hidden = !!t; else c.hidden = !!t && !c.querySelector('.rrow:not([hidden])'); });
+  }
+  function copiarTexto(t, el) {
+    const ok = () => { if (!el) return; el.classList.add('copiado'); setTimeout(() => el.classList.remove('copiado'), 900); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, ok);
+    else { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove(); ok(); }
+  }
+
   /* ---------------- sueldo del mes ---------------- */
   /* Cada mes se abre «Sueldos de <mes anterior>» en Sueldos Mensuales: pedís con el formulario, un inspector
      contesta nombrándote y después lo sumás a la bóveda. */
@@ -2808,6 +2924,35 @@ function moduloMiPJ(ESC, PUENTE) {
   #mipj .card.fino{padding:7px 13px}#mipj .card.fino .ct{margin:0}
   #mipj .badge.bad{color:var(--m-bad);border-color:var(--m-bad);background:color-mix(in srgb,var(--m-bad) 10%,transparent)}
   #mipj .pill .sd{font-size:14px;line-height:1;color:var(--m-gold-bright)}
+  #mipj .nmrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #mipj .nmrow .nm{flex:1;min-width:0}
+  #mipj .rbtn{font:700 11.5px var(--m-sans);color:var(--m-gold-bright);background:color-mix(in srgb,var(--m-gold) 10%,transparent);border:1px solid color-mix(in srgb,var(--m-gold) 50%,transparent);border-radius:999px;padding:5px 11px;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s}
+  #mipj .rbtn:hover{border-color:var(--m-gold-bright);background:color-mix(in srgb,var(--m-gold) 18%,transparent)}
+  #mipj .rbtn.on{background:var(--m-gold);color:var(--m-accent-ink);border-color:var(--m-gold)}
+  #mipj .rapido .rq{width:100%;margin:12px 0 0;padding:8px 12px;border-radius:999px;border:1px solid var(--m-line-strong);background:color-mix(in srgb,var(--m-panel-2) 80%,transparent);color:var(--m-parchment);font:13px var(--m-sans);outline:none}
+  #mipj .rapido .rq:focus{border-color:var(--m-gold)}
+  #mipj .rapido [hidden]{display:none!important}
+  #mipj .rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  #mipj .rgrid.a{grid-template-columns:repeat(4,1fr)}
+  #mipj .rst{text-align:center;padding:6px 4px;border-radius:10px;background:color-mix(in srgb,var(--m-panel) 70%,transparent);border:1px solid var(--m-line-strong);cursor:copy;transition:border-color .2s}
+  #mipj .rst:hover{border-color:var(--m-gold)}
+  #mipj .rst b{display:block;font-family:var(--m-serif);font-size:19px;font-weight:600;color:var(--m-gold-bright);line-height:1.1}
+  #mipj .rst small{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--m-parchment-dim)}
+  #mipj .rgrp{display:flex;justify-content:space-between;margin:9px 0 2px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--m-parchment-dim);font-weight:700;border-bottom:1px solid var(--m-line-strong);padding-bottom:2px}
+  #mipj .rgrp span{color:var(--m-gold-bright);letter-spacing:0;font-size:11.5px}
+  #mipj .rrow{display:grid;grid-template-columns:1fr auto 34px 26px;gap:8px;align-items:baseline;padding:3px 4px;border-radius:7px;font-size:13px;cursor:copy}
+  #mipj .card[data-s="trasfondos"] .rrow{grid-template-columns:1fr auto}
+  #mipj .rrow:hover{background:color-mix(in srgb,var(--m-gold) 10%,transparent)}
+  #mipj .rrow .rn i{font-style:normal;font-size:10px;color:var(--m-parchment-dim);text-transform:uppercase;letter-spacing:.08em}
+  #mipj .rrow .rl{font-size:11px;color:var(--m-parchment-dim)}
+  #mipj .rrow b{text-align:right;color:var(--m-gold-bright);font-variant-numeric:tabular-nums}
+  #mipj .rrow .rp{text-align:right;font-size:11.5px;color:var(--m-parchment-dim);font-variant-numeric:tabular-nums}
+  #mipj .rrow.cero{opacity:.62}
+  #mipj .rrow.esp .rn{padding-left:12px;color:var(--m-parchment-dim);font-size:12px}#mipj .rrow.esp b{font-weight:600;opacity:.8}
+  #mipj .rleg{font-size:9.5px;letter-spacing:.08em;color:var(--m-parchment-dim);font-weight:600}
+  #mipj .rdif{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--m-parchment-dim)}
+  #mipj .rdif b{color:var(--m-parchment);font-variant-numeric:tabular-nums}
+  #mipj .copiado{border-color:var(--m-good)!important;background:color-mix(in srgb,var(--m-good) 16%,transparent)!important}
   #mipj .nm{font-family:var(--m-serif);font-style:italic;font-weight:500;font-size:26px;line-height:1.1;margin:0;
     background:linear-gradient(100deg,var(--m-gold-bright) 10%,var(--m-parchment) 55%,var(--m-arcane-bright) 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
   #mipj .rule{display:flex;align-items:center;gap:10px;color:var(--m-gold);font-size:11px;margin:8px 0 6px}
@@ -2890,8 +3035,9 @@ function moduloMiPJ(ESC, PUENTE) {
     }
     let h = `<div class="box"><span class="grip" title="Arrastrá para cambiar el tamaño · doble clic: tamaño normal"></span><div class="hd" data-a="cerrar" title="Minimizar"><span class="brand"><i>✦</i>Mi PJ</span><small>HP Avada Kedavra</small>
       <span class="zm"><button data-a="zoom-" title="Achicar el texto" aria-label="Achicar el texto">A−</button><button data-a="zoom+" title="Agrandar el texto" aria-label="Agrandar el texto">A+</button></span><span class="car">▾</span></div><div class="bd">`;
-    h += `<h3 class="nm">${esc((datos && datos.pj) || YO)}</h3>`;
-    if (!datos) h += `<p class="dim">${cargando ? 'Leyendo tu ficha, tu bóveda y tus roles…' : 'Tocá «Actualizar» para leer tu ficha y tu bóveda.'}</p>`;
+    h += `<div class="nmrow"><h3 class="nm">${esc((datos && datos.pj) || YO)}</h3>${datos ? `<button class="rbtn${ui.rapido ? ' on' : ''}" data-a="rapido" title="Atributos, habilidades y combate para tus tiradas">${ui.rapido ? '← Volver' : '⚡ Acceso rápido'}</button>` : ''}</div>`;
+    if (datos && ui.rapido) h += vistaRapida();
+    else if (!datos) h += `<p class="dim">${cargando ? 'Leyendo tu ficha, tu bóveda y tus roles…' : 'Tocá «Actualizar» para leer tu ficha y tu bóveda.'}</p>`;
     else {
       if (B) h += `<div class="rule">☾</div><div class="big">${fmt(B.act)}<span>grageas</span></div>
         <div class="stats"><div class="stat"><b>${fmt(B.tot)}</b><small>Totales</small></div><div class="stat"><b>${fmt(B.ini)}</b><small>Iniciales</small></div><div class="stat"><b>${B.pla != null ? fmt(B.pla) + '<span class="dim"> / ' + fmt(B.plt) + '</span>' : '—'}</b><small>Legendarios</small></div></div>`;
@@ -2915,13 +3061,14 @@ function moduloMiPJ(ESC, PUENTE) {
         ${B.revision ? `<div class="row dim">Última revisión: ${esc(B.revision.autor)}, ${esc(B.revision.fecha)}</div>` : ''}
         ${B.nota ? `<div class="nota">Nota de ${esc(B.nota.autor)}: ${esc(B.nota.texto)}</div>` : ''}` : '<div class="dim">No encontré tu bóveda en el Panel de Bóvedas.</div>'}</div>`;
     }
-    h += '<div class="card" id="mipj-canjes"></div>'; /* canjes */
+    if (!(datos && ui.rapido)) h += '<div class="card" id="mipj-canjes"></div>'; /* canjes */
     if (error) h += `<div class="err">${esc(error)}</div>`;
     h += `</div><div class="ft"><span class="sp">${datos ? 'Leído<br>' + esc(leidoTxt(datos.leido)) : ''}</span>
       <button class="b" data-a="act" ${cargando ? 'disabled' : ''}>${cargando ? 'Leyendo…' : 'Actualizar'}</button>
       <button class="b pri" data-a="pam" ${datos ? '' : 'disabled'} title="Abre PAM y te muestra qué se va a cambiar antes de aplicarlo">Enviar a PAM</button></div></div>`;
     root.innerHTML = h;
     ESC.pintarCanje(root.querySelector('#mipj-canjes')); /* canjes */
+    if (ui.rapido && ui.rapidoQ) filtrarRapido(ui.rapidoQ);
   }
 
   async function actualizar() {
@@ -2986,8 +3133,13 @@ function moduloMiPJ(ESC, PUENTE) {
     else if (k === 'viejos') { e.preventDefault(); ui.viejos = !ui.viejos; sv(K.ui, ui); pintar(); }
     else if (k === 'ocultar') { ocultos[a.dataset.t] = +a.dataset.l || 1; sv(K.ocultos, ocultos); pintar(); }
     else if (k === 'zoom-' || k === 'zoom+') { ui.zoom = Math.min(1.4, Math.max(0.8, Math.round(((ui.zoom || 1) + (k === 'zoom+' ? 0.1 : -0.1)) * 10) / 10)); sv(K.ui, ui); aplicarTam(); }
+    else if (k === 'rapido') { ui.rapido = !ui.rapido; ui.rapidoQ = ''; sv(K.ui, ui); pintar(); const bd = root.querySelector('.bd'); if (bd) bd.scrollTop = 0; }
     else if (k === 'sueldo-ocultar' || k === 'sueldo-ver') { e.preventDefault(); ui.sinSueldo = k === 'sueldo-ocultar'; sv(K.ui, ui); pintar(); }
   });
+
+  /* acceso rápido: buscar y copiar */
+  root.addEventListener('input', e => { if (!e.target.matches('.rq')) return; ui.rapidoQ = e.target.value; filtrarRapido(ui.rapidoQ); });
+  root.addEventListener('click', e => { const c = e.target.closest('[data-copiar]'); if (c && root.contains(c)) copiarTexto(c.dataset.copiar, c); });
 
   /* ---------------- tamaño de la ventana: arrastrar la esquina, A− / A+ ---------------- */
   const tamEl = document.createElement('style'); tamEl.id = 'mipj-tam'; document.head.appendChild(tamEl);
