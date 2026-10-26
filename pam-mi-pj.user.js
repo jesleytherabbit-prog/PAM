@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PAM · Mi PJ (HP Avada Kedavra)
 // @namespace    https://jesleytherabbit-prog.github.io/PAM/
-// @version      1.7.0
+// @version      1.7.1
 // @description  Tus grageas, tu ficha, tu bóveda, tus roles y tu sueldo del mes; revisa la bóveda antes de publicar, manda todo a PAM y lleva tus canjes de punta a punta. Nada se publica ni se edita sin que vos lo aceptes.
 // @author       Hana Park
 // @match        https://hp-avada-kedavra.foroactivo.com/*
@@ -81,7 +81,7 @@ function crearCanjes(PUENTE) {
     'ne5ZhyC': 'Ficha correcta'
   };
 
-  var VERSION = 'mipj-1.7.0';
+  var VERSION = 'mipj-1.7.1';
   var PAM_URL = 'https://jesleytherabbit-prog.github.io/PAM/';
   var CLAVE_PAQUETE = 'pam.paquete';
   var CLAVE_PETICION = 'pam.peticion';     // peticion capturada en PAM, pendiente de publicar
@@ -3073,9 +3073,12 @@ function moduloMiPJ(ESC, PUENTE) {
     docs.filter(Boolean).forEach(d => postsDe(d).forEach(p => { if (vistos.has(p.id)) return; vistos.add(p.id); const P = partesDeFecha(p.fecha); out.push({ id: +p.id, autor: p.autor, utc: P ? aUTC(P, tz) : null }); }));
     return { titulo: ((d1.querySelector('h1.page-title') || {}).textContent || '').trim(), tid, url: `/t${tid}-${slug}`, posts: out.sort((a, b) => a.id - b.id) };
   }
+  /* cuentas de staff que abren y cierran temas: no cobran ni cuentan como actividad */
+  const NO_COBRAN = ['tramas'];
   function contarOficial(T) {
     const por = new Map();
-    T.posts.filter(p => p.autor && !esBot(p.autor)).forEach(p => {
+    const vale = p => p.autor && !esBot(p.autor) && !NO_COBRAN.includes(norm(p.autor));
+    T.posts.filter(vale).forEach(p => {
       let r = por.get(p.autor); if (!r) { r = { autor: p.autor, posts: 0, cuentan: 0, fuera: { dia: 0, semana: 0, mes: 0, fecha: 0 }, c: { dia: {}, semana: {}, mes: {} }, ultimo: null }; por.set(p.autor, r); }
       r.posts++; if (p.utc) r.ultimo = Math.max(r.ultimo || 0, p.utc);
       if (!p.utc) { r.fuera.fecha++; return; }
@@ -3086,19 +3089,15 @@ function moduloMiPJ(ESC, PUENTE) {
       r.cuentan++;
     });
     const parts = [...por.values()].map(r => ({ autor: r.autor, posts: r.posts, cuentan: r.cuentan, fuera: r.fuera, ultimo: r.ultimo }));
-    const ult = Math.max(0, ...T.posts.map(p => p.utc || 0));
+    const ult = Math.max(0, ...T.posts.filter(vale).map(p => p.utc || 0));
     return { titulo: T.titulo, tid: T.tid, url: T.url, parts, ultimo: ult || null, leido: Date.now() };
   }
   const cuartoDe = tid => !!gv('mipj.of.cuarto', {})[tid];
   function grageasOf(O, autor) { const q = cuartoDe(O.tid); const r = O.parts.find(p => norm(p.autor) === norm(autor)); return r ? r.cuentan * (q ? 5 : 20) : 0; }
-  function textoReporte(O) {
-    const q = cuartoDe(O.tid), pp = q ? 5 : 20, cierre = q ? 15 : 60;
-    return `[b]Recompensas del oficial[/b] — ${O.titulo}\n` + O.parts.map(p => `${p.autor}: ${p.cuentan} posts × ${pp} = ${fmt(p.cuentan * pp)} grageas`).join('\n') + `\nSuceso de cierre: ${cierre} grageas`;
-  }
   function avisoParado(O) {
     if (!O.ultimo) return '';
     const d = Math.floor((Date.now() - O.ultimo) / 864e5);
-    if (d >= 30) return `<div class="of-av mal">Lleva ${d} días sin posts: pasado un mes el oficial se puede cerrar y el suceso queda libre.</div>`;
+    if (d >= 30) return `<div class="of-av mal">Lleva ${d} días sin posts: queda como abandonado y no aparece en tu panel hasta que alguien vuelva a postear.</div>`;
     if (d >= 21) return `<div class="of-av">Lleva ${d} días sin posts: quedan ${30 - d} para llegar al mes.</div>`;
     return '';
   }
@@ -3113,7 +3112,7 @@ function moduloMiPJ(ESC, PUENTE) {
       <div class="dim">+${cierre} grageas para quien envíe el Suceso de cierre (o repartidas, si así lo indica el reporte).${q ? ' Cobrado a un cuarto (segundo oficial).' : ''}</div>
       ${avisoParado(O)}
       ${compacto ? '' : `<label class="of-q"><input type="checkbox" data-of-cuarto="${O.tid}" ${q ? 'checked' : ''}> Es mi segundo oficial (suceso con más de dos años): se cobra a un cuarto</label>
-      <div class="of-bt"><button class="b" data-of-copiar="${O.tid}">Copiar para el reporte</button><span class="dim">Topes por usuario en hora de España: 3 por día, 15 por semana (lunes a domingo), 45 por mes.</span></div>`}`;
+      <div class="dim">Topes por usuario en hora de España: 3 por día, 15 por semana (lunes a domingo), 45 por mes. Los mensajes de Tramas no se cuentan.</div>`}`;
   }
   let ultimasFilas = [];
   async function leerMisOficiales() {
@@ -3126,13 +3125,15 @@ function moduloMiPJ(ESC, PUENTE) {
     return out;
   }
   function tarjetaOficiales() {
-    const mios = (datos && datos.oficiales) || [], otras = [];
+    /* abandonados: un mes o más sin posts de los participantes (Tramas no cuenta); vuelven si alguien postea */
+    const vivo = O => !O.ultimo || Date.now() - O.ultimo < 30 * 864e5;
+    const mios = ((datos && datos.oficiales) || []).filter(vivo), otras = [];
     const C = gv('mipj.cuentas', {});
-    Object.keys(C).forEach(uid => { if (String(uid) === String(UID)) return; const d = gv('mipj.' + uid, null); ((d && d.oficiales) || []).forEach(O => otras.push({ O, cuenta: (d && d.pj) || C[uid].nombre })); });
+    Object.keys(C).forEach(uid => { if (String(uid) === String(UID)) return; const d = gv('mipj.' + uid, null); ((d && d.oficiales) || []).filter(vivo).forEach(O => otras.push({ O, cuenta: (d && d.pj) || C[uid].nombre })); });
     if (!mios.length && !otras.length) return '';
     const fila = (O, quien) => { const r = O.parts.find(p => norm(p.autor) === norm(quien)) || { posts: 0, cuentan: 0, fuera: {} }; const d = O.ultimo ? Math.floor((Date.now() - O.ultimo) / 864e5) : null;
-      return `<div class="rol"><div class="rt"><a href="${esc(O.url)}">${esc(O.titulo.replace(/\s*\[\s*oficial\s*\]\s*/i, ' ').trim())}</a><div class="dim">${quien !== YO ? '<b>' + esc(quien) + '</b> · ' : ''}${r.posts} posts · ${r.cuentan} cuentan → <b class="of-g">${fmt(grageasOf(O, quien))} grageas</b></div>${d != null && d >= 21 ? `<div class="of-av${d >= 30 ? ' mal' : ''}">${d} días sin posts</div>` : ''}</div></div>`; };
-    return `<div class="card"><div class="ct">🎓 Oficiales en curso</div>${mios.map(O => fila(O, YO)).join('')}${otras.map(x => fila(x.O, x.cuenta)).join('')}<div class="dim" style="margin-top:4px">Abrí el tema para ver a todos los participantes y copiar el reporte.</div></div>`;
+      return `<div class="rol"><div class="rt"><a href="${esc(O.url)}">${esc(O.titulo.replace(/\s*\[\s*oficial\s*\]\s*/i, ' ').trim())}</a><div class="dim">${quien !== YO ? '<b>' + esc(quien) + '</b> · ' : ''}${r.posts} posts · ${r.cuentan} cuentan → <b class="of-g">${fmt(grageasOf(O, quien))} grageas</b></div>${d != null && d >= 21 ? `<div class="of-av">${d} días sin posts: quedan ${30 - d} para que se dé por abandonado</div>` : ''}</div></div>`; };
+    return `<div class="card"><div class="ct">🎓 Oficiales en curso</div>${mios.map(O => fila(O, YO)).join('')}${otras.map(x => fila(x.O, x.cuenta)).join('')}<div class="dim" style="margin-top:4px">Abrí el tema para ver a todos los participantes.</div></div>`;
   }
   /* en el tema de un oficial: la barra con las cuentas, arriba de los mensajes */
   async function barraOficial() {
@@ -3148,7 +3149,6 @@ function moduloMiPJ(ESC, PUENTE) {
       const O = contarOficial(await postsDelTema(location.pathname, await zonaCuenta()));
       pintarB(O);
       caja.addEventListener('change', e => { const c = e.target.closest('[data-of-cuarto]'); if (!c) return; const m = gv('mipj.of.cuarto', {}); if (c.checked) m[O.tid] = 1; else delete m[O.tid]; sv('mipj.of.cuarto', m); pintarB(O); });
-      caja.addEventListener('click', e => { const b = e.target.closest('[data-of-copiar]'); if (!b) return; copiarTexto(textoReporte(O), b); b.textContent = 'Copiado ✓'; setTimeout(() => { b.textContent = 'Copiar para el reporte'; }, 1400); });
     } catch (e) { caja.querySelector('.of-bd').innerHTML = `<div class="dim">No pude leer el tema: ${esc(e.message)}</div>`; }
   }
   const BOTS = ['dados magicos', 'dado magico', 'dados'];
