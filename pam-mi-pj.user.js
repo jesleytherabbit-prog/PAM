@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PAM · Mi PJ (HP Avada Kedavra)
 // @namespace    https://jesleytherabbit-prog.github.io/PAM/
-// @version      1.6.0
+// @version      1.7.0
 // @description  Tus grageas, tu ficha, tu bóveda, tus roles y tu sueldo del mes; revisa la bóveda antes de publicar, manda todo a PAM y lleva tus canjes de punta a punta. Nada se publica ni se edita sin que vos lo aceptes.
 // @author       Hana Park
 // @match        https://hp-avada-kedavra.foroactivo.com/*
@@ -81,7 +81,7 @@ function crearCanjes(PUENTE) {
     'ne5ZhyC': 'Ficha correcta'
   };
 
-  var VERSION = 'mipj-1.6.0';
+  var VERSION = 'mipj-1.7.0';
   var PAM_URL = 'https://jesleytherabbit-prog.github.io/PAM/';
   var CLAVE_PAQUETE = 'pam.paquete';
   var CLAVE_PETICION = 'pam.peticion';     // peticion capturada en PAM, pendiente de publicar
@@ -2525,18 +2525,26 @@ function moduloMiPJ(ESC, PUENTE) {
   const gv = (k, d) => { try { const v = GM_getValue(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const sv = (k, v) => GM_setValue(k, JSON.stringify(v));
   const get = async url => { const r = await fetch(url, { credentials: 'same-origin' }); if (!r.ok) throw new Error(r.status + ' ' + url); return new DOMParser().parseFromString(await r.text(), 'text/html'); };
-  const FECHA = /((?:Lun|Mar|Miér|Mie|Jue|Vie|Sáb|Sab|Dom)\s+\d{1,2}\s+[A-Za-zé]+\.?(?:\s+\d{4})?\s+-\s+\d{1,2}:\d{2}(?::\d{2})?|(?:Hoy|Ayer)\s+a\s+las\s+\d{1,2}:\d{2}(?::\d{2})?)/;
+  /* el foro muestra la fecha según cada cuenta: «Lun 2 Mar 2026 - 10:00» o «Dom 25 Oct 2026, 11:03 pm» */
+  const FECHA = /((?:Lun|Mar|Mi[ée]r?|Jue|Vie|S[áa]b|Dom)\.?\s+\d{1,2}\s+[A-Za-zé]+\.?(?:\s+\d{4})?\s*(?:,|-)\s*\d{1,2}:\d{2}(?::\d{2})?(?:\s*[ap]\.?\s?m\.?)?|(?:Hoy|Ayer)\s+a\s+las\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[ap]\.?\s?m\.?)?)/i;
   const MES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, set: 8, oct: 9, nov: 10, dic: 11 };
   function aFecha(t) {
     t = String(t || '');
-    let m = t.match(/(Hoy|Ayer)\s+a\s+las\s+(\d{1,2}):(\d{2})/);
-    if (m) { const d = new Date(); if (m[1] === 'Ayer') d.setDate(d.getDate() - 1); d.setHours(+m[2], +m[3], 0, 0); return d; }
-    m = t.match(/(\d{1,2})\s+([A-Za-zé]+)\.?(?:\s+(\d{4}))?\s+-\s+(\d{1,2}):(\d{2})/);
+    const P = partesDeFecha(t); if (!P) return null;
+    return new Date(P.y, P.mo, P.d, P.h, P.mi);
+  }
+  /* la fecha tal como la muestra el foro, en partes (hora de reloj de la cuenta) */
+  function partesDeFecha(t) {
+    t = String(t || '');
+    const ampm = (h, s) => { s = String(s || '').toLowerCase().replace(/[.\s]/g, ''); if (s === 'pm' && h < 12) return h + 12; if (s === 'am' && h === 12) return 0; return h; };
+    let m = t.match(/(Hoy|Ayer)\s+a\s+las\s+(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?\s?m\.?)?/i);
+    if (m) { const d = new Date(); if (/ayer/i.test(m[1])) d.setDate(d.getDate() - 1); return { y: d.getFullYear(), mo: d.getMonth(), d: d.getDate(), h: ampm(+m[2], m[4]), mi: +m[3], rel: true }; }
+    m = t.match(/(\d{1,2})\s+([A-Za-zé]+)\.?(?:\s+(\d{4}))?\s*(?:,|-)\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?\s?m\.?)?/i);
     if (!m) return null;
     const mes = MES[norm(m[2]).slice(0, 3)]; if (mes == null) return null;
-    const hoy = new Date(); const y = m[3] ? +m[3] : hoy.getFullYear();
-    let d = new Date(y, mes, +m[1], +m[4], +m[5]); if (!m[3] && d > hoy) d = new Date(y - 1, mes, +m[1], +m[4], +m[5]);
-    return d;
+    const hoy = new Date(); let y = m[3] ? +m[3] : hoy.getFullYear();
+    if (!m[3] && new Date(y, mes, +m[1]) > hoy) y--;
+    return { y, mo: mes, d: +m[1], h: ampm(+m[4], m[6]), mi: +m[5] };
   }
   const dias = d => d ? Math.floor((Date.now() - d) / 864e5) : null;
   const haceTxt = d => { const n = dias(d); return n == null ? '' : n <= 0 ? 'hoy' : n === 1 ? 'hace 1 día' : `hace ${n} días`; };
@@ -3022,6 +3030,127 @@ function moduloMiPJ(ESC, PUENTE) {
       <div class="dim">${M.n ? 'Turno ' + esc(M.n) + ' · ' : 'Turno nuevo · '}master ${esc(M.master)}${cuenta ? ' · <b>' + esc(cuenta) + '</b>' : ''}</div><div class="pz">${plazo}</div></div>
       ${cuenta ? '' : `<button class="x" data-a="ocultar" data-t="${r.tid}" data-l="${r.lpid}" title="Ocultar hasta el próximo mensaje">✕</button>`}</div>`;
   }
+
+  /* ---------------- oficiales: posts que cuentan y recompensas ---------------- */
+  /* 20 grageas por post, con tope de 3 por día, 15 por semana (lunes a domingo) y 45 por mes, por usuario y en hora
+     de España; +60 por el Suceso de cierre. Un segundo oficial (suceso de más de dos años) se cobra a un cuarto. */
+  const ES_OFICIAL = /\[\s*(?:rol(?:eo)?\s+)?oficial\s*\]|\boficial\b\s*[\]|:·•-]/i;
+  const TOPE = { dia: 3, semana: 15, mes: 45 };
+  /* zona horaria de la cuenta (perfil › preferencias); el foro muestra las horas en esa zona */
+  async function zonaCuenta() {
+    const k = 'mipj.tz.' + UID, c = gv(k, null);
+    if (c && Date.now() - c.t < 7 * 864e5) return c.tz;
+    let tz = 'Europe/Madrid';
+    try {
+      const d = await get('/profile?mode=editprofile&page_profil=preferences');
+      const s = d.querySelector('select[name="timezone"]'); const v = s && s.value;
+      if (v && /^[A-Za-z_]+\/[A-Za-z_/+-]+$/.test(v)) tz = v;
+      else if (v && /^-?\d+(\.\d+)?$/.test(v)) tz = 'Etc/GMT' + (+v > 0 ? '-' : '+') + Math.abs(Math.round(+v));
+    } catch (e) {}
+    sv(k, { tz, t: Date.now() });
+    return tz;
+  }
+  function aUTC(P, tz) {
+    const base = Date.UTC(P.y, P.mo, P.d, P.h, P.mi);
+    let off = offsetZona(tz, new Date(base)); off = offsetZona(tz, new Date(base - off * 60000));
+    return base - off * 60000;
+  }
+  const fmtMadrid = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+  function clavesMadrid(utc) {
+    const p = Object.fromEntries(fmtMadrid.formatToParts(new Date(utc)).map(x => [x.type, x.value]));
+    const dow = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[p.weekday] || 0;
+    const lunes = new Date(Date.UTC(+p.year, +p.month - 1, +p.day) - dow * 864e5).toISOString().slice(0, 10);
+    return { dia: `${p.year}-${p.month}-${p.day}`, semana: lunes, mes: `${p.year}-${p.month}` };
+  }
+  /* todos los mensajes del tema, con fecha en UTC */
+  async function postsDelTema(url, tz) {
+    const tid = tidDe(url), slug = (String(url).match(/\/t\d+(?:p\d+)?-([^/?#]*)/) || [0, ''])[1];
+    const d1 = await get(`/t${tid}-${slug}`);
+    let max = 0; d1.querySelectorAll(`a[href*="/t${tid}p"]`).forEach(a => { const x = (a.getAttribute('href') || '').match(new RegExp(`/t${tid}p(\\d+)-`)); if (x) max = Math.max(max, +x[1]); });
+    const offs = []; for (let o = 15; o <= max; o += 15) offs.push(o);
+    const docs = [d1]; for (let i = 0; i < offs.length; i += 4) docs.push(...await Promise.all(offs.slice(i, i + 4).map(o => get(`/t${tid}p${o}-${slug}`).catch(() => null))));
+    const vistos = new Set(), out = [];
+    docs.filter(Boolean).forEach(d => postsDe(d).forEach(p => { if (vistos.has(p.id)) return; vistos.add(p.id); const P = partesDeFecha(p.fecha); out.push({ id: +p.id, autor: p.autor, utc: P ? aUTC(P, tz) : null }); }));
+    return { titulo: ((d1.querySelector('h1.page-title') || {}).textContent || '').trim(), tid, url: `/t${tid}-${slug}`, posts: out.sort((a, b) => a.id - b.id) };
+  }
+  function contarOficial(T) {
+    const por = new Map();
+    T.posts.filter(p => p.autor && !esBot(p.autor)).forEach(p => {
+      let r = por.get(p.autor); if (!r) { r = { autor: p.autor, posts: 0, cuentan: 0, fuera: { dia: 0, semana: 0, mes: 0, fecha: 0 }, c: { dia: {}, semana: {}, mes: {} }, ultimo: null }; por.set(p.autor, r); }
+      r.posts++; if (p.utc) r.ultimo = Math.max(r.ultimo || 0, p.utc);
+      if (!p.utc) { r.fuera.fecha++; return; }
+      const k = clavesMadrid(p.utc);
+      const lleno = ['dia', 'semana', 'mes'].find(x => (r.c[x][k[x]] || 0) >= TOPE[x]);
+      if (lleno) { r.fuera[lleno]++; return; }
+      ['dia', 'semana', 'mes'].forEach(x => { r.c[x][k[x]] = (r.c[x][k[x]] || 0) + 1; });
+      r.cuentan++;
+    });
+    const parts = [...por.values()].map(r => ({ autor: r.autor, posts: r.posts, cuentan: r.cuentan, fuera: r.fuera, ultimo: r.ultimo }));
+    const ult = Math.max(0, ...T.posts.map(p => p.utc || 0));
+    return { titulo: T.titulo, tid: T.tid, url: T.url, parts, ultimo: ult || null, leido: Date.now() };
+  }
+  const cuartoDe = tid => !!gv('mipj.of.cuarto', {})[tid];
+  function grageasOf(O, autor) { const q = cuartoDe(O.tid); const r = O.parts.find(p => norm(p.autor) === norm(autor)); return r ? r.cuentan * (q ? 5 : 20) : 0; }
+  function textoReporte(O) {
+    const q = cuartoDe(O.tid), pp = q ? 5 : 20, cierre = q ? 15 : 60;
+    return `[b]Recompensas del oficial[/b] — ${O.titulo}\n` + O.parts.map(p => `${p.autor}: ${p.cuentan} posts × ${pp} = ${fmt(p.cuentan * pp)} grageas`).join('\n') + `\nSuceso de cierre: ${cierre} grageas`;
+  }
+  function avisoParado(O) {
+    if (!O.ultimo) return '';
+    const d = Math.floor((Date.now() - O.ultimo) / 864e5);
+    if (d >= 30) return `<div class="of-av mal">Lleva ${d} días sin posts: pasado un mes el oficial se puede cerrar y el suceso queda libre.</div>`;
+    if (d >= 21) return `<div class="of-av">Lleva ${d} días sin posts: quedan ${30 - d} para llegar al mes.</div>`;
+    return '';
+  }
+  function detalleFuera(f) {
+    const t = []; if (f.dia) t.push(`${f.dia} por el tope diario`); if (f.semana) t.push(`${f.semana} por el semanal`); if (f.mes) t.push(`${f.mes} por el mensual`); if (f.fecha) t.push(`${f.fecha} sin fecha legible`);
+    return t.length ? ` <span class="dim">· no cuentan ${t.join(', ')}</span>` : '';
+  }
+  /* la tabla del oficial (en el tema y en el panel) */
+  function htmlOficial(O, compacto) {
+    const q = cuartoDe(O.tid), pp = q ? 5 : 20, cierre = q ? 15 : 60;
+    return `${O.parts.map(p => `<div class="of-p"><b>${esc(p.autor)}</b> · ${p.posts} ${p.posts === 1 ? 'post' : 'posts'} · <b>${p.cuentan}</b> cuentan → <b class="of-g">${fmt(p.cuentan * pp)} grageas</b>${detalleFuera(p.fuera)}</div>`).join('')}
+      <div class="dim">+${cierre} grageas para quien envíe el Suceso de cierre (o repartidas, si así lo indica el reporte).${q ? ' Cobrado a un cuarto (segundo oficial).' : ''}</div>
+      ${avisoParado(O)}
+      ${compacto ? '' : `<label class="of-q"><input type="checkbox" data-of-cuarto="${O.tid}" ${q ? 'checked' : ''}> Es mi segundo oficial (suceso con más de dos años): se cobra a un cuarto</label>
+      <div class="of-bt"><button class="b" data-of-copiar="${O.tid}">Copiar para el reporte</button><span class="dim">Topes por usuario en hora de España: 3 por día, 15 por semana (lunes a domingo), 45 por mes.</span></div>`}`;
+  }
+  let ultimasFilas = [];
+  async function leerMisOficiales() {
+    const tz = await zonaCuenta(), cache = gv(K.foros, {});
+    const cands = []; ultimasFilas.forEach(f => { if (ES_OFICIAL.test(f.titulo) && !cands.some(c => c.tid === f.tid)) cands.push(f); });
+    const out = [];
+    for (const f of cands) {
+      try { if (f.fid && !(await esForoDeRol(f.fid, cache))) continue; const O = contarOficial(await postsDelTema(f.url, tz)); if (O.parts.some(p => norm(p.autor) === norm(YO))) out.push(O); } catch (e) { console.warn('[Mi PJ] oficial', e); }
+    }
+    return out;
+  }
+  function tarjetaOficiales() {
+    const mios = (datos && datos.oficiales) || [], otras = [];
+    const C = gv('mipj.cuentas', {});
+    Object.keys(C).forEach(uid => { if (String(uid) === String(UID)) return; const d = gv('mipj.' + uid, null); ((d && d.oficiales) || []).forEach(O => otras.push({ O, cuenta: (d && d.pj) || C[uid].nombre })); });
+    if (!mios.length && !otras.length) return '';
+    const fila = (O, quien) => { const r = O.parts.find(p => norm(p.autor) === norm(quien)) || { posts: 0, cuentan: 0, fuera: {} }; const d = O.ultimo ? Math.floor((Date.now() - O.ultimo) / 864e5) : null;
+      return `<div class="rol"><div class="rt"><a href="${esc(O.url)}">${esc(O.titulo.replace(/\s*\[\s*oficial\s*\]\s*/i, ' ').trim())}</a><div class="dim">${quien !== YO ? '<b>' + esc(quien) + '</b> · ' : ''}${r.posts} posts · ${r.cuentan} cuentan → <b class="of-g">${fmt(grageasOf(O, quien))} grageas</b></div>${d != null && d >= 21 ? `<div class="of-av${d >= 30 ? ' mal' : ''}">${d} días sin posts</div>` : ''}</div></div>`; };
+    return `<div class="card"><div class="ct">🎓 Oficiales en curso</div>${mios.map(O => fila(O, YO)).join('')}${otras.map(x => fila(x.O, x.cuenta)).join('')}<div class="dim" style="margin-top:4px">Abrí el tema para ver a todos los participantes y copiar el reporte.</div></div>`;
+  }
+  /* en el tema de un oficial: la barra con las cuentas, arriba de los mensajes */
+  async function barraOficial() {
+    const h1 = document.querySelector('h1.page-title'); const tid = tidActual();
+    if (!h1 || !tid || !ES_OFICIAL.test(h1.textContent)) return;
+    const p0 = document.querySelector('div.post'); if (!p0) return;
+    const caja = document.createElement('details'); caja.className = 'mipj-of'; caja.open = gv('mipj.of.abierta', true);
+    caja.innerHTML = '<summary><span class="ic">🎓</span>Este oficial<small>Mi PJ · leyendo…</small></summary><div class="of-bd"></div>';
+    p0.parentElement.insertBefore(caja, p0);
+    caja.addEventListener('toggle', () => sv('mipj.of.abierta', caja.open));
+    const pintarB = O => { caja.querySelector('summary small').textContent = `Mi PJ · ${O.parts.reduce((a, p) => a + p.posts, 0)} posts`; caja.querySelector('.of-bd').innerHTML = htmlOficial(O, false); };
+    try {
+      const O = contarOficial(await postsDelTema(location.pathname, await zonaCuenta()));
+      pintarB(O);
+      caja.addEventListener('change', e => { const c = e.target.closest('[data-of-cuarto]'); if (!c) return; const m = gv('mipj.of.cuarto', {}); if (c.checked) m[O.tid] = 1; else delete m[O.tid]; sv('mipj.of.cuarto', m); pintarB(O); });
+      caja.addEventListener('click', e => { const b = e.target.closest('[data-of-copiar]'); if (!b) return; copiarTexto(textoReporte(O), b); b.textContent = 'Copiado ✓'; setTimeout(() => { b.textContent = 'Copiar para el reporte'; }, 1400); });
+    } catch (e) { caja.querySelector('.of-bd').innerHTML = `<div class="dim">No pude leer el tema: ${esc(e.message)}</div>`; }
+  }
   const BOTS = ['dados magicos', 'dado magico', 'dados'];
   const esBot = n => BOTS.includes(norm(n));
   async function leerRoles() {
@@ -3039,6 +3168,7 @@ function moduloMiPJ(ESC, PUENTE) {
           autor: autor.trim(), fecha: (lp.textContent.match(FECHA) || [''])[0], ultUrl: ult ? abs(ult.getAttribute('href')) : '' });
       });
     }
+    ultimasFilas = filas.slice();
     const cache = gv(K.foros, {});
     /* si el último mensaje es de los Dados Mágicos, cuenta quién escribió antes que los dados */
     await Promise.all(filas.filter(f => f.fid && esBot(f.autor)).map(async f => {
@@ -3077,7 +3207,7 @@ function moduloMiPJ(ESC, PUENTE) {
   let temaEl = null;
   function aplicarTema() {
     if (!temaEl) { temaEl = document.createElement('style'); document.head.appendChild(temaEl); }
-    temaEl.textContent = '#mipj,#mipj-modal,.mipj-check,.esc-ui{' /* canjes */ + Object.entries(tema).filter(([k]) => k !== 'skin').map(([k, v]) => `--m-${k}:${v}`).join(';') + '}';
+    temaEl.textContent = '#mipj,#mipj-modal,.mipj-check,.mipj-of,.esc-ui{' /* canjes */ + Object.entries(tema).filter(([k]) => k !== 'skin').map(([k, v]) => `--m-${k}:${v}`).join(';') + '}';
     document.documentElement.dataset.mipjSkin = tema.skin || 'avadense';
     cargarFuentes();
   }
@@ -3107,6 +3237,23 @@ function moduloMiPJ(ESC, PUENTE) {
   #mipj .card.fino{padding:7px 13px}#mipj .card.fino .ct{margin:0}
   #mipj .badge.bad{color:var(--m-bad);border-color:var(--m-bad);background:color-mix(in srgb,var(--m-bad) 10%,transparent)}
   #mipj .pill .sd{font-size:14px;line-height:1;color:var(--m-gold-bright)}
+  #mipj .of-g,.mipj-of .of-g{color:var(--m-gold-bright)}
+  #mipj .of-av,.mipj-of .of-av{margin-top:3px;font-size:12px;color:var(--m-gold-bright)}
+  #mipj .of-av.mal,.mipj-of .of-av.mal{color:var(--m-bad);font-weight:700}
+  .mipj-of{margin:10px 0;border-radius:14px;font:13.5px/1.5 var(--m-sans);color:var(--m-parchment);text-align:left;
+    background:radial-gradient(420px 160px at 0% 0%,color-mix(in srgb,var(--m-arcane-bright) 14%,transparent),transparent 70%),var(--m-panel);border:1px solid color-mix(in srgb,var(--m-gold) 45%,transparent)}
+  .mipj-of summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;font-family:var(--m-serif);font-style:italic;font-size:19px;color:var(--m-gold-bright)}
+  .mipj-of summary::-webkit-details-marker{display:none}
+  .mipj-of summary .ic{font-style:normal;font-size:15px}
+  .mipj-of summary small{margin-left:auto;font:600 10.5px var(--m-sans);letter-spacing:.12em;text-transform:uppercase;color:var(--m-parchment-dim)}
+  .mipj-of .of-bd{padding:2px 14px 12px;display:grid;gap:4px}
+  .mipj-of .of-p b{color:var(--m-parchment)}
+  .mipj-of .dim{color:var(--m-parchment-dim);font-size:12px}
+  .mipj-of .of-q{display:flex;gap:6px;align-items:center;font-size:12.5px;margin-top:4px;cursor:pointer}
+  .mipj-of .of-bt{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+  .mipj-of button.b{font:700 12px var(--m-sans);border-radius:999px;padding:6px 12px;cursor:pointer;border:1px solid var(--m-gold);background:transparent;color:var(--m-gold-bright)}
+  .mipj-of button.b:hover{background:color-mix(in srgb,var(--m-gold) 14%,transparent)}
+  html[data-mipj-skin="pixel"] .mipj-of{border-radius:0}
   #mipj .rol.mis .rt a{font-style:normal;font-family:var(--m-serif)}
   #mipj .rol.mis .pz{margin-top:2px;font-size:12px;color:var(--m-gold-bright)}
   #mipj .rol.mis.urge .pz{color:var(--m-bad);font-weight:700}
@@ -3267,6 +3414,7 @@ function moduloMiPJ(ESC, PUENTE) {
       if (V.length) h += ui.viejos ? `<div class="row dim" style="margin-top:8px">Sin movimiento hace más de ${DIAS_ROL} días:</div>` + V.map(r => `<div class="rol"><div class="rt"><a href="${esc(r.ultUrl || r.url)}">${esc(r.titulo)}</a><div class="dim">Respondió ${esc(r.autor || 'alguien')}</div></div><span class="d">${esc(haceTxt(aFecha(r.fecha)))}</span><button class="x" data-a="ocultar" data-t="${r.tid}" data-l="${r.lpid}" title="Ya terminó">✕</button></div>`).join('') + `<div class="row"><a href="#" data-a="viejos">Ocultar los viejos</a></div>`
         : `<div class="row dim" style="margin-top:6px">y ${V.length} ${V.length === 1 ? 'rol viejo' : 'roles viejos'} (más de ${DIAS_ROL} días quietos) · <a href="#" data-a="viejos">ver</a></div>`;
       h += `</div>`;
+      h += tarjetaOficiales();
       h += tarjetaSueldo();
       h += `<div class="card"><div class="ct">❖ Ficha</div>${F ? `<a class="tl" href="${esc(F.url)}">${esc(F.titulo)}</a><br>
         <span class="badge ${pend ? 'warn' : 'ok'}">${pend ? '◷ Pendiente de revisión' : '✓ Revisada'}</span>
@@ -3279,7 +3427,7 @@ function moduloMiPJ(ESC, PUENTE) {
     }
     if (!(datos && ui.rapido)) {
       const rb = BIB.resumen();
-      h += `<div class="card"><div class="ct">📜 Oficiales<span class="sp"></span><a href="#" data-a="oficiales">abrir</a></div>${rb
+      h += `<div class="card"><div class="ct">📜 Biblioteca de oficiales<span class="sp"></span><a href="#" data-a="oficiales">abrir</a></div>${rb
         ? `<div class="row">${rb.libres} libres · ${rb.abandonados} abandonados${rb.favs ? ` · ★ ${rb.favs}` : ''}</div><div class="dim">Último escaneo: ${esc(leidoTxt(rb.fecha))}</div>`
         : '<div class="dim">Biblioteca de sucesos de El Profeta: cuáles están libres, en curso o abandonados. Marcalos con ★ y pasalos a PAM.</div>'}
         <div class="row" style="margin-top:6px"><button class="b" data-a="oficiales">Abrir la biblioteca</button></div></div>`;
@@ -3309,7 +3457,8 @@ function moduloMiPJ(ESC, PUENTE) {
       if (boveda && M.boveda) boveda = Object.assign({}, M.boveda, boveda);
       if (!boveda) boveda = await leerBoveda().catch(e => { console.warn('[Mi PJ] bóveda', e); return null; }) || M.boveda;
       if (foto && foto.errores && foto.errores.length && !(ficha && boveda)) error = foto.errores.join(' ');
-      datos = { v: 2, cuenta: YO, pj: M.pj || YO, uid: UID, leido: new Date().toISOString(), ficha, boveda, roles, sueldo };
+      const oficiales = await leerMisOficiales().catch(e => { console.warn('[Mi PJ] oficiales', e); return (datos && datos.oficiales) || []; });
+      datos = { v: 2, cuenta: YO, pj: M.pj || YO, uid: UID, leido: new Date().toISOString(), ficha, boveda, roles, sueldo, oficiales };
       sv(K.datos, datos);
       const C = gv('mipj.cuentas', {}); C[UID] = { nombre: YO, leido: datos.leido }; sv('mipj.cuentas', C);
     } catch (e) { error = 'No se pudo leer el foro: ' + e.message; }
@@ -3486,6 +3635,7 @@ function moduloMiPJ(ESC, PUENTE) {
   }
   const buscarEditores = () => document.querySelectorAll('form').forEach(f => { if (f.querySelector('textarea[name="message"]')) engancharEditor(f); });
   buscarEditores(); setTimeout(buscarEditores, 1500); setTimeout(buscarEditores, 4000);
+  barraOficial();
 
   pintar();
   const viejo = !datos || datos.v !== 2 || (Date.now() - new Date(datos.leido)) > CACHE_MIN * 60000;
