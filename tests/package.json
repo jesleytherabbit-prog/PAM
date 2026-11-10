@@ -1,0 +1,11 @@
+{
+  "name": "pam-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import ./legado/sin-version.mjs --test --test-reporter=spec \"unit/**/*.test.mjs\" \"caracterizacion/**/*.test.mjs\" \"agente/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}
