@@ -1,0 +1,99 @@
+// 2.1.0: el botón «Colorear diálogos» del agente, junto al «Previsualizar» del editor del foro (desde la 2.1.2 no
+// previsualiza solo). PAM (el panel) usa la
+// configuración que PAM dejó en el almacén del agente (`pam.coloreador`); aquí, con el servicio de verdad.
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { JSDOM } from 'jsdom';
+
+const PAM = 'https://claudilahozbosch.github.io', FORO = 'https://hp-avada-kedavra.foroactivo.com';
+const espera = ms => new Promise(r => setTimeout(r, ms));
+const pagina = `<!doctype html><html><head><title>Foro</title><script>var _userdata = {}; _userdata["user_id"] = 7; _userdata["username"] = "Himmel Reich Bils"; _userdata["session_logged_in"] = 1;</script></head>
+<body><form name="post" id="editor" action="/post" method="post"><textarea name="message"></textarea>
+<div class="botones"><input type="submit" name="preview" value="Previsualizar"><input type="submit" name="post" value="Enviar"></div></form></body></html>`;
+
+const dom = new JSDOM(pagina, { url: FORO + '/post?t=5&mode=reply', runScripts: 'outside-only', pretendToBeVisual: true });
+const W = dom.window;
+W.fetch = async u => ({ status: 200, ok: true, url: String(u), text: async () => '<html></html>' });
+const CFG = { tag: '#A3000D', dlgf: {}, opts: { raya: true, guion: true, comillas: true }, names: [], marks: [] };
+const gm = { 'pam.coloreador': { v: 1, general: { ...CFG, tag: '#111111' }, pjs: [{ nombre: 'Himmel Reich Bils.', config: CFG }] } };
+W.GM_getValue = (k, d) => (k in gm ? gm[k] : d);
+W.GM_setValue = (k, v) => { gm[k] = v; };
+W.GM_listValues = () => Object.keys(gm);
+const panelBus = new EventTarget();
+Object.defineProperty(W.HTMLIFrameElement.prototype, 'contentWindow', { get() { return { postMessage: (data, destino) => { if (destino === PAM) panelBus.dispatchEvent(new MessageEvent('message', { data: structuredClone(data), origin: FORO })); } }; } });
+const alForo = data => W.dispatchEvent(new W.MessageEvent('message', { data: structuredClone(data), origin: PAM }));
+W.eval(readFileSync(new URL('../../agente/pam-agente.user.js', import.meta.url), 'utf8'));
+after(() => W.close());
+
+globalThis.DOMParser = W.DOMParser;
+const { ClienteAgente } = await import('../../js/servicios/agente/ClienteAgente.js');
+const { crearColoreadorDelForo } = await import('../../js/servicios/ColoreadorDelForo.js');
+const { revisarEditor } = await import('../../js/reglas/RevisorBoveda.js');
+const agente = new ClienteAgente({ destino: { postMessage: (d, o) => o === FORO && alForo(d) }, origen: FORO, escuchar: panelBus });
+// lo mismo que js/paginas/panel/main.js
+const C = crearColoreadorDelForo(agente, { cuenta: () => 'Himmel Reich Bils' });
+agente.atender('editor.revisar', async d => { const r = revisarEditor(d, null); r.colorear = await C.contar(String(d.texto)); return r; });
+agente.atender('editor.colorear', d => C.colorear(String(d.texto)));
+agente.atender('editor.descolorear', d => C.descolorear(String(d.texto)));
+
+const editor = W.document.getElementById('editor'), ta = editor.querySelector('textarea');
+const prev = editor.querySelector('input[name="preview"]');
+const host = () => editor.querySelector('.pam-agente-colorear');
+const btn = () => host().shadowRoot.querySelector('[data-accion="colorear"]');
+const quitar = () => host().shadowRoot.querySelector('[data-accion="quitar"]');
+const visibles = () => host().style.display === 'none' ? [] : [...host().shadowRoot.querySelectorAll('.mipj-col')].filter(b => b.style.display !== 'none').map(b => b.getAttribute('data-accion'));
+const enviados = []; editor.addEventListener('submit', e => { enviados.push(e.submitter?.name); e.preventDefault(); });
+const escribir = async t => { ta.value = t; await espera(1700); }; // el agente mira el editor cada 1,5 s
+
+test('los botones van junto a «Previsualizar», separados, y solo se ven si hay algo que hacer', async () => {
+  await agente.hola();
+  assert.equal(host().nextElementSibling, prev);
+  assert.equal(host().style.margin, '0px 10px 0px 4px', 'separado de «Previsualizar»');
+  await escribir('Solo narración, sin nadie que hable.');
+  assert.deepEqual(visibles(), []);
+  await escribir('Entró en la sala.\n—Buenas noches —dijo.');
+  assert.deepEqual(visibles(), ['colorear']);
+  assert.equal(btn().textContent, '✦Colorear diálogosHimmel Reich Bils');
+  assert.equal(btn().title, 'Colorea el diálogo sin color con tu Coloreador de PAM (Himmel Reich Bils)');
+});
+
+test('«Colorear» pone el texto coloreado (la configuración de su personaje), sin previsualizar; después sale «Quitar colores»', async () => {
+  btn().click(); await espera(80);
+  assert.equal(ta.value, 'Entró en la sala.\n[color=#A3000D]—Buenas noches[/color] —dijo.');
+  assert.deepEqual(enviados, [], 'no envía nada: el «Previsualizar» lo pulsa el usuario si quiere');
+  await espera(1700);
+  assert.deepEqual(visibles(), ['quitar']);
+  quitar().click(); await espera(80);
+  assert.equal(ta.value, 'Entró en la sala.\n—Buenas noches —dijo.');
+  await espera(1700);
+  assert.deepEqual(visibles(), ['colorear']);
+});
+
+test('2.1.4: con colores puestos a mano salen los dos; «Colorear» los respeta y «Quitar colores» los quita todos', async () => {
+  await escribir('[color=#336699]—Soy otro personaje.[/color]\n—Y yo hablo sin color.');
+  assert.deepEqual(visibles(), ['colorear', 'quitar']);
+  btn().click(); await espera(80);
+  assert.equal(ta.value, '[color=#336699]—Soy otro personaje.[/color]\n[color=#A3000D]—Y yo hablo sin color.[/color]');
+  await espera(1700);
+  assert.deepEqual(visibles(), ['quitar'], 'ya no queda ningún diálogo sin color');
+  quitar().click(); await espera(80);
+  assert.equal(ta.value, '—Soy otro personaje.\n—Y yo hablo sin color.');
+  // después de previsualizar, el foro lo devuelve con \r\n y el color en minúsculas: «Quitar colores» igual
+  await escribir('Narración.\r\n[color=#a3000d]—Hola.[/color]');
+  assert.deepEqual(visibles(), ['quitar']);
+  quitar().click(); await espera(80);
+  assert.equal(ta.value, 'Narración.\n—Hola.');
+});
+
+test('sin nada de PAM, avisa en lugar de colorear', async () => {
+  delete gm['pam.coloreador'];
+  await espera(5100); // el panel vuelve a mirar el almacén cada 5 s
+  await escribir('—Hola otra vez.');
+  assert.equal(host().style.display, '');
+  assert.match(btn().title, /Primero abrí PAM/);
+  btn().click(); await espera(60);
+  assert.equal(ta.value, '—Hola otra vez.');
+  assert.match(btn().textContent, /Abrí PAM una vez/);
+  assert.deepEqual(enviados, []);
+});
